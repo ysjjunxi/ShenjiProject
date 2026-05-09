@@ -11,6 +11,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { ModelCategory } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from './Pagination';
 
 const MOCK_CATEGORIES: ModelCategory[] = [
   {
@@ -72,18 +73,28 @@ export default function ModelCategoryMgmt() {
     name: '',
     description: '',
   });
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
 
   const filteredCategories = categories.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
     c.description?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Reset to first page when filtering
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const totalPages = Math.ceil(filteredCategories.length / pageSize);
+  const paginatedCategories = filteredCategories.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="flex-1 flex flex-col bg-[#F9FAFB] overflow-hidden">
       {/* Header */}
       <div className="px-8 h-[90px] bg-white border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm z-10">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">模型分类管理</h2>
+          <h2 className="text-xl font-normal text-gray-900 tracking-tight">模型分类管理</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">统一管理系统的业务分类模型目录</p>
         </div>
 
@@ -120,21 +131,21 @@ export default function ModelCategoryMgmt() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-100">
-                    <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest w-[30%]">分类名称</th>
-                    <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest w-[45%]">描述</th>
-                    <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest w-[10%] text-center">包含模型</th>
-                    <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest w-[15%] text-right">操作</th>
+                    <th className="px-8 py-5 text-xs font-normal text-gray-400 uppercase tracking-widest w-[30%]">分类名称</th>
+                    <th className="px-8 py-5 text-xs font-normal text-gray-400 uppercase tracking-widest w-[45%]">描述</th>
+                    <th className="px-8 py-5 text-xs font-normal text-gray-400 uppercase tracking-widest w-[10%] text-center">包含模型</th>
+                    <th className="px-8 py-5 text-xs font-normal text-gray-400 uppercase tracking-widest w-[15%] text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {filteredCategories.map(item => (
+                  {paginatedCategories.map(item => (
                     <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 rounded-xl flex items-center justify-center shrink-0 transition-colors">
                             <Folder size={18} />
                           </div>
-                          <span className="text-sm font-bold text-gray-900">{item.name}</span>
+                          <span className="text-sm font-normal text-gray-900">{item.name}</span>
                         </div>
                       </td>
                       <td className="px-8 py-5">
@@ -186,6 +197,14 @@ export default function ModelCategoryMgmt() {
                 </tbody>
               </table>
             </div>
+
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={filteredCategories.length}
+              pageSize={pageSize}
+            />
           </div>
         </div>
       </div>

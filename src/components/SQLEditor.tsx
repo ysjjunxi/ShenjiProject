@@ -39,10 +39,7 @@ interface SQLEditorProps {
 }
 
 const MOCK_DATA_SOURCES = [
-  { id: 'ds1', name: 'xxx县财政预算管理库', type: 'Oracle' },
-  { id: 'ds2', name: 'xxx县国库集中支付系统', type: 'SQLServer' },
-  { id: 'ds3', name: 'xxx行政事业单位财务核算库', type: 'MySQL' },
-  { id: 'ds4', name: 'xxx乡镇财政管理及三资平台', type: 'SQLServer' },
+  { id: 'ds1', name: '标准审计数据库', type: 'MySQL' },
 ];
 
 const MOCK_SCRIPTS = [
@@ -127,15 +124,19 @@ export default function SQLEditor({ initialSql = '', onExecute, hideHeader, onTo
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
       {/* Header */}
       {!hideHeader && (
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md z-20 shrink-0 sticky top-0 min-h-[64px]">
-          <div className="flex items-center gap-2">
+        <div className="px-6 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md z-20 shrink-0 sticky top-0 h-[50px]">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-normal text-gray-500 uppercase tracking-widest">SQL 编辑器</span>
+            </div>
+            <div className="h-4 w-[1px] bg-gray-100 mx-2" />
             <button 
               onClick={() => setSql('')}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center gap-2"
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all flex items-center gap-1.5"
               title="清空"
             >
-              <Trash2 size={16} />
-              <span className="text-sm font-bold">清空</span>
+              <Trash2 size={14} />
+              <span className="text-[11px] font-bold">清空</span>
             </button>
           </div>
 

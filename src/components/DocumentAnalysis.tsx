@@ -409,7 +409,7 @@ const SAMPLE_COMPARISON: any = {
       { item: '异常缺项/多项', value: '完全重合', status: 'error', reason: '均缺少“监控杆基座补强”等3个必选科目' }
     ],
     metadataComparison: [
-      { item: 'WPS会员账号', docA: 'wps_user_66892', docB: 'wps_user_66892', status: 'error', level: '高风险', detail: '解析文档底层残留相同云同步账号' },
+      { item: '文档账号', docA: 'wps_user_66892', docB: 'wps_user_66892', status: 'error', level: '高风险', detail: '解析文档底层残留相同云同步账号' },
       { item: '联络信息', docA: '138****0001 / hz@test.com', docB: '138****0001 / hz@test.com', status: 'warning', level: '中风险', detail: '地址、电话、邮箱指纹高度撞车' },
       { item: '标书预留手机号', docA: '159****8888', docB: '159****8888', status: 'warning', level: '中风险', detail: '监测到不同单位预留同一联系人号码' },
       { item: '时间戳分析', docA: '2024-03-20 14:00', docB: '2024-03-20 14:02', status: 'info', level: '低风险', detail: '文档创建/修改时间高度集中，疑似批量制作' },
@@ -458,7 +458,7 @@ const SAMPLE_COMPARISON: any = {
     ]
   },
   collusionEvidence: [
-    { type: '元数据指纹碰撞', description: '两份标书的MAC地址、WPS账户标识及原始作者完全相同', evidence: 'Account: wps_user_66892 | MAC: 00-50-56-C0-00-08' },
+    { type: '元数据指纹碰撞', description: '两份标书的MAC地址、文档账户标识及原始作者完全相同', evidence: 'Account: wps_user_66892 | MAC: 00-50-56-C0-00-08' },
     { type: '内容同源错误', description: '在第15页关于“履约保证金”的描述中存在相同的中文字符简繁错写', evidence: '“履约保正金” (冷僻错别字同步)' },
     { type: 'AI病句检测', description: '检测到两份文档在描述施工难点时，同时出现了不符合中文语法的异常长难句', evidence: '“在对于其后之进行过程中的...”' }
   ]
@@ -469,7 +469,7 @@ const COMPARISON_CONFIG = [
     id: 'metadata', label: '元数据', options: [
       { id: 'meta_ip', label: '电脑IP/MAC地址' },
       { id: 'meta_author', label: '标书作者' },
-      { id: 'meta_wps', label: 'WPS会员账号' },
+      { id: 'meta_wps', label: '文档账号' },
       { id: 'meta_contact', label: '联络信息（地址、电话、邮箱）' },
       { id: 'meta_phone', label: '预留手机号' },
       { id: 'meta_timestamp', label: '文档时间戳' }
@@ -890,7 +890,7 @@ export default function DocumentAnalysis() {
                             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                               <FileText size={18} />
                             </div>
-                            <span className="text-sm font-medium text-gray-900 truncate max-w-[300px]">
+                            <span className="text-sm font-normal text-gray-900 truncate max-w-[300px]">
                               {doc.name}
                             </span>
                           </div>
@@ -1753,17 +1753,17 @@ export default function DocumentAnalysis() {
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/4">判定维度</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/4">算法引擎</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/4">比对测算值</th>
-                                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/4">风险判定</th>
+                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">判定维度</th>
+                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">算法引擎</th>
+                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">比对测算值</th>
+                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">风险判定</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                               {SAMPLE_COMPARISON.collusionAnomalyClues.structureComparison.map((item: any, idx: number) => (
                                 <tr key={idx} className="group hover:bg-purple-50/30 transition-colors">
                                   <td className="px-8 py-6">
-                                    <p className="text-sm font-black text-gray-900">{item.item}</p>
+                                    <p className="text-sm font-normal text-gray-900">{item.item}</p>
                                   </td>
                                   <td className="px-8 py-6">
                                     <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase">{item.metric}</span>
@@ -1780,7 +1780,7 @@ export default function DocumentAnalysis() {
                                       )}>
                                         {item.status === 'critical' ? '极高匹配' : item.status === 'warning' ? '疑似雷同' : '基本合规'}
                                       </div>
-                                      <p className="text-[10px] text-gray-400 font-bold">{item.desc}</p>
+                                      <p className="text-[10px] text-gray-400 font-normal">{item.desc}</p>
                                     </div>
                                   </td>
                                 </tr>

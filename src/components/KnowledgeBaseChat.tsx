@@ -193,10 +193,8 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
                   msg.role === 'user' ? "bg-blue-500 text-white" : "bg-transparent ring-0 shadow-none"
                 )}>
                    {msg.role === 'user' ? 'd' : (
-                     <div className="w-8 h-8 flex items-center justify-center bg-white shadow shadow-blue-100 rounded-lg">
-                        <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M24 4L28.8906 13.9114L39.8181 15.503L31.8906 23.23L33.7639 34.1136L24 28.98L14.2361 34.1136L16.1094 23.23L8.18189 15.503L19.1094 13.9114L24 4Z" fill="#6366F1" stroke="#6366F1" strokeWidth="4" strokeLinejoin="round"/>
-                        </svg>
+                     <div className="w-8 h-8 flex items-center justify-center bg-white shadow shadow-blue-100 rounded-lg text-blue-600">
+                        <Bot size={20} />
                      </div>
                    )}
                 </div>
@@ -268,7 +266,7 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
                      }
                    }}
                    placeholder="可以问我任何问题, shift + Enter 换行"
-                   className="w-full bg-transparent border-none focus:ring-0 text-sm p-0 pb-12 resize-none h-24 placeholder:text-gray-300"
+                   className="w-full bg-transparent border-none focus:ring-0 text-sm p-0 pb-12 resize-none h-24 placeholder:text-gray-300 outline-none"
                  />
                  
                  <div className="absolute bottom-4 left-4 flex items-center gap-3">
@@ -281,14 +279,14 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
                    onClick={handleSend}
                    disabled={!inputValue.trim()}
                    className={cn(
-                     "absolute bottom-4 right-4 flex items-center gap-2 px-6 py-2 rounded-xl transition-all font-bold text-sm",
+                     "absolute bottom-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all",
                      inputValue.trim() 
                        ? "bg-blue-600 text-white shadow-lg shadow-blue-200 active:scale-95" 
                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
                    )}
                  >
-                   <span>发送</span>
-                   <Send size={14} className={cn(inputValue.trim() ? "animate-in slide-in-from-left-2" : "")} />
+
+                   <Send size={18} />
                  </button>
               </div>
            </div>

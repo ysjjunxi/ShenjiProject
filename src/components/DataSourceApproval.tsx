@@ -3,12 +3,15 @@ import { Search, Filter, Calendar, CheckCircle2, XCircle, Clock, ChevronRight } 
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { approvalStore, ApprovalRecord } from '../data/mockApprovals';
+import Pagination from './Pagination';
 
 export default function DataSourceApproval() {
   const [data, setData] = useState<ApprovalRecord[]>(approvalStore.snapshot);
   const [searchProject, setSearchProject] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     return approvalStore.subscribe(() => {
@@ -22,6 +25,14 @@ export default function DataSourceApproval() {
     const matchDate = dateRange === '' || item.applyTime.includes(dateRange);
     return matchProject && matchStatus && matchDate;
   });
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchProject, statusFilter, dateRange]);
+
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleAction = (id: string, action: 'approved' | 'rejected') => {
     approvalStore.updateApprovalStatus(id, action);
@@ -95,21 +106,21 @@ export default function DataSourceApproval() {
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-sm">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">审批项目</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">申请人</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">申请数据库</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">申请备注</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">发起/审批时间</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">审批人</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">审批状态</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right whitespace-nowrap">操作</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">审批项目</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">申请人</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">申请数据库</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">申请备注</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">发起/审批时间</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">审批人</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">审批状态</th>
+                  <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider text-right whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredData.map(row => (
+                {paginatedData.map(row => (
                   <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-6 py-4">
-                      <span className="text-sm font-semibold text-gray-900">{row.project}</span>
+                      <span className="text-sm font-normal text-gray-900">{row.project}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-medium text-gray-700">{row.applicant}</span>
@@ -162,6 +173,14 @@ export default function DataSourceApproval() {
               </tbody>
             </table>
           </div>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredData.length}
+            pageSize={pageSize}
+          />
         </div>
       </div>
     </div>

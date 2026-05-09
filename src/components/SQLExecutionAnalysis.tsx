@@ -158,7 +158,7 @@ const generateMockData = (sql: string) => {
   return TABLE_CONFIGS[tableName] || TABLE_CONFIGS.t_budget_execution;
 };
 
-export default function SQLExecutionAnalysis({ sql, dataSourceName = 'xxx县财政预算管理库', onBackToEditor, hideHeader }: SQLExecutionAnalysisProps) {
+export default function SQLExecutionAnalysis({ sql, dataSourceName = '标准审计数据库', onBackToEditor, hideHeader }: SQLExecutionAnalysisProps) {
   const [status, setStatus] = React.useState<'idle' | 'executing' | 'success' | 'error'>(sql ? 'executing' : 'idle');
   const [progress, setProgress] = React.useState(0);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -250,7 +250,7 @@ export default function SQLExecutionAnalysis({ sql, dataSourceName = 'xxx县财�
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
       {/* Header */}
       {!hideHeader && status !== 'idle' && (
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+        <div className="px-6 border-b border-gray-100 flex items-center justify-between bg-white z-10 h-[50px] shrink-0">
           <div className="flex items-center gap-4">
             <button 
               onClick={onBackToEditor}
@@ -259,7 +259,7 @@ export default function SQLExecutionAnalysis({ sql, dataSourceName = 'xxx县财�
               <ChevronLeft size={20} />
             </button>
             <div>
-              <h2 className="text-sm font-bold text-gray-900 tracking-tight">执行结果</h2>
+              <h2 className="text-sm font-normal text-gray-900 tracking-tight">执行结果</h2>
               <div className="flex items-center gap-3 mt-0.5">
                 <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
                   <Database size={10} />
@@ -375,7 +375,7 @@ export default function SQLExecutionAnalysis({ sql, dataSourceName = 'xxx县财�
                         className="px-6 py-4 border-b border-gray-100 text-left cursor-pointer hover:bg-gray-50 transition-all group"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{col.label}</span>
+                          <span className="text-[10px] font-normal text-gray-400 uppercase tracking-widest">{col.label}</span>
                           <div className="text-gray-300 group-hover:text-gray-500 transition-all">
                             {sortConfig.key === col.key ? (
                               sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
@@ -407,7 +407,7 @@ export default function SQLExecutionAnalysis({ sql, dataSourceName = 'xxx县财�
                             onChange={() => toggleRow(rowId)}
                           />
                         </td>
-                        {visibleColumns.map(col => (
+                        {visibleColumns.map((col, colIdx) => (
                           <td key={col.key} className="px-6 py-4 whitespace-nowrap">
                             {col.key === 'has_approval_doc' || col.key === 'is_compliant' || col.key === 'has_explanation' ? (
                               <span className={cn(
@@ -421,7 +421,7 @@ export default function SQLExecutionAnalysis({ sql, dataSourceName = 'xxx县财�
                             ) : (
                               <span className={cn(
                                 "text-xs",
-                                col.isPrimaryKey ? "font-mono text-gray-400" : "text-gray-700 font-medium"
+                                col.isPrimaryKey ? "font-mono text-gray-400" : (colIdx === 0 ? "text-gray-700 font-normal" : "text-gray-700 font-medium")
                               )}>
                                 {(col.key.includes('amount') || (col.key.includes('budget') && !col.key.includes('year'))) ? `¥${Number(row[col.key]).toLocaleString()}` : row[col.key]}
                               </span>

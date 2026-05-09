@@ -444,7 +444,7 @@ export default function DataStructureDisplay({ onGenerateSql, hideHeader }: Data
                       <tr key={col.name} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-mono font-bold text-gray-800">{col.name}</span>
+                            <span className="text-sm font-mono font-normal text-gray-800">{col.name}</span>
                             {col.isPrimary && <Key size={12} className="text-amber-500 shrink-0" />}
                           </div>
                         </td>

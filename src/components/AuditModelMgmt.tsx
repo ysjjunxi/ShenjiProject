@@ -4,7 +4,7 @@ import {
   Search, 
   Filter, 
   MoreVertical, 
-  BrainCircuit, 
+  Zap, 
   Clock, 
   User, 
   ChevronRight, 
@@ -29,20 +29,23 @@ import {
   Code,
   Edit2,
   Trash2,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { AuditModel, ModelVersion } from '@/src/types';
+import { MOCK_CATEGORIES, KNOWLEDGE_BASES, MOCK_MATERIALS } from '@/src/constants';
 import { motion, AnimatePresence } from 'motion/react';
 import AuditModelDetail from './AuditModelDetail';
 import AuditModelEditor from './AuditModelEditor';
+import Pagination from './Pagination';
 
 export const MOCK_MODELS: AuditModel[] = [
   {
     id: 'm1',
     name: '专项资金重复拨付检测模型',
-    category: '财务审计 / 专项资金',
-    status: 'enabled',
+    category: '财政收支审计类模型',
+    status: 'published',
     version: 'v2.1.0',
     creator: '张审计',
     createdAt: Date.now() - 86400000 * 30,
@@ -50,17 +53,17 @@ export const MOCK_MODELS: AuditModel[] = [
     description: '通过对收款单位、金额、用途及拨付时间的多维匹配，识别潜在的重复拨付风险。',
     auditLogic: '1. 提取指定时间范围内的拨付记录；\n2. 按收款单位+金额进行分组；\n3. 过滤出组内记录数 > 1 的数据；\n4. 结合用途描述进行相似度计算。',
     laws: ['《审计法》第二十二条', '《专项资金管理办法》'],
-    ruleIds: ['r1'],
-    dataSources: [
+    knowledgeBaseId: 'kb_audit',
+    materialIds: ['mat1', 'mat4'],
+    checkpoints: [
       {
-        db: '财务主数据库 (FinanceDB_Prod)',
-        table: '支付流水表 (payments)',
-        fields: ['vendor_id', 'vendor_name', 'amount', 'payment_date', 'purpose', 'status']
-      },
-      {
-        db: '财务主数据库 (FinanceDB_Prod)',
-        table: '凭证表 (vouchers)',
-        fields: ['voucher_id', 'amount', 'subject_code']
+        id: 'cp1',
+        name: '收款单位重复性审查',
+        description: '自动分析同一单位在短时间内多次领取同类资金的情况。',
+        standardTables: [
+          { tableName: '支付流水表', fields: ['vendor_name', 'amount', 'date'] }
+        ],
+        script: 'SELECT vendor_name, amount, COUNT(*) as count FROM payments GROUP BY vendor_name, amount HAVING count > 1'
       }
     ],
     auditProcessMd: `# 专项资金重复拨付审计流程
@@ -91,16 +94,16 @@ export const MOCK_MODELS: AuditModel[] = [
       navigation: [{ name: 'projectId', type: 'string', description: '项目ID', required: true }]
     },
     versions: [
-      { version: 'v2.1.0', creator: '张审计', createdAt: Date.now() - 3600000, content: '优化了相似度算法', isDefault: true },
-      { version: 'v2.0.0', creator: '李审计', createdAt: Date.now() - 86400000 * 5, content: '初始版本', isDefault: false }
+      { version: 'v2.1.0', creator: '张审计', createdAt: Date.now() - 3600000, content: '优化了相似度算法', isDefault: true, status: 'published' },
+      { version: 'v2.0.0', creator: '李审计', createdAt: Date.now() - 86400000 * 5, content: '初始版本', isDefault: false, status: 'published' }
     ],
     callUrl: 'https://api.audit.com/v1/skills/m1'
   },
   {
     id: 'm2',
     name: '虚增收入异常检测模型',
-    category: '财务审计 / 收入审计',
-    status: 'enabled',
+    category: '财政收支审计类模型',
+    status: 'published',
     version: 'v1.0.5',
     creator: '李审计',
     createdAt: Date.now() - 86400000 * 15,
@@ -108,11 +111,17 @@ export const MOCK_MODELS: AuditModel[] = [
     description: '基于关联交易、异常回款及毛利率波动等维度，识别潜在的虚增收入风险。',
     auditLogic: '1. 分析月度收入波动情况；\n2. 识别关联方交易占比；\n3. 检查回款周期是否异常。',
     laws: ['《会计法》', '《企业会计准则》'],
-    dataSources: [
+    knowledgeBaseId: 'kb_audit',
+    materialIds: ['mat3'],
+    checkpoints: [
       {
-        db: 'ERP主库 (ERP_Main)',
-        table: '销售订单表 (sales_orders)',
-        fields: ['order_id', 'customer_id', 'total_amount', 'order_date']
+        id: 'cp2',
+        name: '毛利率波动异常审查',
+        description: '检测同一产品在不同客户间的毛利率差异。',
+        standardTables: [
+          { tableName: '销售订单表', fields: ['product_id', 'customer_id', 'margin'] }
+        ],
+        script: 'SELECT product_id, STDDEV(margin) as margin_std FROM sales GROUP BY product_id HAVING margin_std > 0.1'
       }
     ],
     auditProcessMd: `# 虚增收入异常检测分析流程
@@ -131,7 +140,7 @@ export const MOCK_MODELS: AuditModel[] = [
       navigation: []
     },
     versions: [
-      { version: 'v1.0.5', creator: '李审计', createdAt: Date.now() - 7200000, content: '修正了回款周期计算逻辑', isDefault: true }
+      { version: 'v1.0.5', creator: '李审计', createdAt: Date.now() - 7200000, content: '修正了回款周期计算逻辑', isDefault: true, status: 'published' }
     ]
   }
 ];
@@ -143,9 +152,14 @@ export default function AuditModelMgmt() {
   const [categoryFilter, setCategoryFilter] = React.useState('all');
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [selectedModel, setSelectedModel] = React.useState<AuditModel | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
   const [editorMode, setEditorMode] = React.useState<'auto' | 'manual'>('auto');
-  const [mdModel, setMdModel] = React.useState<AuditModel | null>(null);
+  const [previewModel, setPreviewModel] = React.useState<AuditModel | null>(null);
+  const [activeFile, setActiveFile] = React.useState<string>('Skill.md');
   const [showDeleteModal, setShowDeleteModal] = React.useState<string | null>(null);
+  const [showDeleteVersionModal, setShowDeleteVersionModal] = React.useState<{ modelId: string, version: ModelVersion } | null>(null);
+  const [expandedModelIds, setExpandedModelIds] = React.useState<Set<string>>(new Set());
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
   const categoryDropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -159,7 +173,7 @@ export default function AuditModelMgmt() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const CATEGORIES = ['财务审计', '专项资金', '工程项目'];
+  const CATEGORIES = MOCK_CATEGORIES.map(c => c.name);
 
   const filteredModels = models.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -168,6 +182,14 @@ export default function AuditModelMgmt() {
     const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, categoryFilter, statusFilter]);
+
+  const totalPages = Math.ceil(filteredModels.length / pageSize);
+  const paginatedModels = filteredModels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleAddModel = (mode: 'auto' | 'manual') => {
     setEditorMode(mode);
@@ -202,6 +224,42 @@ export default function AuditModelMgmt() {
     }
   };
 
+  const confirmDeleteVersion = () => {
+    if (showDeleteVersionModal) {
+      const { modelId, version } = showDeleteVersionModal;
+      setModels(models.map(m => {
+        if (m.id === modelId) {
+          const updatedVersions = m.versions.filter(v => v.version !== version.version);
+          return {
+            ...m,
+            versions: updatedVersions,
+            version: m.version === version.version ? (updatedVersions.find(v => v.isDefault)?.version || updatedVersions[0]?.version) : m.version
+          };
+        }
+        return m;
+      }));
+      setShowDeleteVersionModal(null);
+    }
+  };
+
+  const toggleExpand = (modelId: string) => {
+    setExpandedModelIds(prev => {
+      const next = new Set(prev);
+      if (next.has(modelId)) {
+        next.delete(modelId);
+      } else {
+        next.add(modelId);
+      }
+      return next;
+    });
+  };
+
+  const getMaterialsForModel = (model: AuditModel) => {
+    return MOCK_MATERIALS.filter(m => model.materialIds?.includes(m.id));
+  };
+
+  const currentKB = previewModel ? KNOWLEDGE_BASES.find(kb => kb.id === previewModel.knowledgeBaseId) : null;
+
   if (view === 'detail' && selectedModel) {
     return (
       <AuditModelDetail 
@@ -210,6 +268,10 @@ export default function AuditModelMgmt() {
           setView('list');
           setSelectedModel(null);
         }} 
+        onUpdate={(updatedModel) => {
+          setModels(models.map(m => m.id === updatedModel.id ? updatedModel : m));
+          setSelectedModel(updatedModel);
+        }}
       />
     );
   }
@@ -313,50 +375,84 @@ export default function AuditModelMgmt() {
             <Upload size={16} />
             <span>导入模型</span>
           </button>
-          <div className="relative group">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm">
-              <Plus size={18} />
-              <span className="font-medium">新增模型</span>
-            </button>
-            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-              <button 
-                onClick={() => handleAddModel('auto')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-              >
-                <BrainCircuit size={16} />
-                <span>AI 自动生成</span>
-              </button>
-              <button 
-                onClick={() => handleAddModel('manual')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-              >
-                <Settings size={16} />
-                <span>手动组装编写</span>
-              </button>
-            </div>
-          </div>
+          <button 
+            onClick={() => handleAddModel('manual')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm"
+          >
+            <Plus size={18} />
+            <span className="font-medium">新增模型</span>
+          </button>
         </div>
       </div>
 
-      {/* Grid List */}
+      {/* Expandable Table List */}
       <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
-          {filteredModels.map((model) => (
-            <ModelCard 
-              key={model.id} 
-              model={model} 
-              onClick={() => handleSelectModel(model)}
-              onExport={() => handleExport(model)}
-              onEdit={() => handleEdit(model)}
-              onDelete={() => setShowDeleteModal(model.id)}
-              onViewMD={() => setMdModel(model)}
-            />
-          ))}
+        <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 text-[12px] font-bold text-gray-400 uppercase tracking-widest">
+              <tr>
+                <th className="px-6 py-4 w-10"></th>
+                <th className="px-6 py-4">模型名称</th>
+                <th className="px-6 py-4">模型分类</th>
+                <th className="px-6 py-4">适用场景</th>
+                <th className="px-6 py-4">当前版本</th>
+                <th className="px-6 py-4">创建人</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedModels.map((model) => (
+                <ModelRow 
+                  key={model.id}
+                  model={model}
+                  isExpanded={expandedModelIds.has(model.id)}
+                  onToggleExpand={() => toggleExpand(model.id)}
+                  onSelect={() => handleSelectModel(model)}
+                  onEdit={(v) => handleEdit({ ...model, version: v.version, status: model.status })} 
+                  onDeleteVersion={(v) => setShowDeleteVersionModal({ modelId: model.id, version: v })}
+                  onPublishVersion={(v) => {
+                    const updatedVersions = model.versions.map(ver => 
+                      ver.version === v.version ? { ...ver, status: 'published' as const } : ver
+                    );
+                    setModels(models.map(m => m.id === model.id ? { 
+                      ...m, 
+                      status: 'published',
+                      versions: updatedVersions
+                    } : m));
+                  }}
+                  onSetDefault={(v) => {
+                    const updatedVersions = model.versions.map(ver => ({
+                      ...ver,
+                      isDefault: ver.version === v.version
+                    }));
+                    setModels(models.map(m => m.id === model.id ? { 
+                      ...m, 
+                      version: v.version,
+                      versions: updatedVersions 
+                    } : m));
+                  }}
+                  onPreview={(v) => {
+                    setPreviewModel({ ...model, version: v.version });
+                    setActiveFile('Skill.md');
+                  }}
+                  onDownload={(v) => handleExport({ ...model, version: v.version })}
+                  onDeleteModel={() => setShowDeleteModal(model.id)}
+                />
+              ))}
+            </tbody>
+          </table>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredModels.length}
+            pageSize={pageSize}
+          />
           
           {filteredModels.length === 0 && (
-            <div className="col-span-full py-24 text-center">
+            <div className="py-24 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BrainCircuit size={32} className="text-gray-300" />
+                <Zap size={32} className="text-gray-300" />
               </div>
               <h3 className="text-lg font-medium text-gray-900">未找到相关模型</h3>
               <p className="text-gray-500 mt-1">请尝试更换搜索关键词或筛选条件</p>
@@ -365,77 +461,205 @@ export default function AuditModelMgmt() {
         </div>
       </div>
 
-      {/* MD Modal */}
+      {/* Skill Preview Modal */}
       <AnimatePresence>
-        {mdModel && (
+        {previewModel && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setMdModel(null)}
+              onClick={() => setPreviewModel(null)}
               className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl h-[600px] flex flex-col overflow-hidden"
+              className="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[700px] flex flex-col overflow-hidden"
             >
               <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900 flex items-center gap-2">
-                  <FileText size={20} className="text-purple-600"/>
-                  模型 Markdown 视图
-                </h3>
-                <button onClick={() => setMdModel(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <Terminal size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 leading-none mb-1">模型内部构造预览 (Skill)</h3>
+                    <p className="text-xs text-gray-500">{previewModel.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setPreviewModel(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X size={20}/>
                 </button>
               </div>
-              <div className="flex-1 p-6 overflow-y-auto bg-gray-900 text-gray-100 font-mono text-sm leading-relaxed whitespace-pre-wrap">
-{`# ${mdModel.name}
 
-**分类**: ${mdModel.category}
-**版本**: ${mdModel.version}
-**创建人**: ${mdModel.creator}
-**更新时间**: ${new Date(mdModel.updatedAt).toLocaleString()}
+              <div className="flex-1 flex overflow-hidden">
+                {/* File Explorer Sidebar */}
+                <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col pt-4 shrink-0">
+                  <div className="flex-1 overflow-y-auto px-4 space-y-4">
+                    {/* Root Folder */}
+                    <div className="space-y-1">
+                      <button 
+                        onClick={() => setActiveFile('Skill.md')}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                          activeFile === 'Skill.md' ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:bg-white/50"
+                        )}
+                      >
+                        <FileText size={16} className={activeFile === 'Skill.md' ? "text-blue-500" : "text-gray-400"} />
+                        <span>Skill.md</span>
+                      </button>
+                    </div>
 
-## 描述
-${mdModel.description}
+                    {/* Scripts Folder */}
+                    <div className="space-y-1">
+                      <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <ChevronDown size={12} />
+                        scripts/
+                      </p>
+                      {['generation.sql', 'view.sql', 'statistics.sql'].map(file => (
+                        <button 
+                          key={file}
+                          onClick={() => setActiveFile(file)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ml-2",
+                            activeFile === file ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:bg-white/50"
+                          )}
+                        >
+                          <Code size={14} className={activeFile === file ? "text-blue-500" : "text-gray-400"} />
+                          <span>{file}</span>
+                        </button>
+                      ))}
+                    </div>
 
-## 审计思路
-${mdModel.auditLogic}
+                    {/* Reference Folder */}
+                    <div className="space-y-1">
+                      <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <ChevronDown size={12} />
+                        reference/
+                      </p>
+                      {getMaterialsForModel(previewModel).map(m => (
+                        <button 
+                          key={m.id}
+                          onClick={() => setActiveFile(m.name)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ml-2",
+                            activeFile === m.name ? "bg-white text-blue-600 shadow-sm" : "text-gray-600 hover:bg-white/50"
+                          )}
+                        >
+                          <FileText size={14} className={activeFile === m.name ? "text-blue-500" : "text-gray-400"} />
+                          <span className="truncate">{m.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-## 法规依据
-${mdModel.laws.map(l => `- ${l}`).join('\n')}
+                {/* Content Area */}
+                <div className="flex-1 bg-white overflow-hidden flex flex-col">
+                  <div className="flex-1 overflow-y-auto p-8 font-mono text-sm leading-relaxed whitespace-pre-wrap bg-gray-900 border-l border-gray-800 text-gray-100 custom-scrollbar">
+                    {activeFile === 'Skill.md' && (
+                      <div className="space-y-6">
+                        <div>
+                          <h1 className="text-2xl font-bold text-white mb-2">{previewModel.name} Skill Definition</h1>
+                          <div className="h-1 w-20 bg-blue-500 rounded-full"></div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-6 bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Model ID</p>
+                            <p className="text-blue-400">{previewModel.id}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Version</p>
+                            <p className="text-blue-400">{previewModel.version}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Category</p>
+                            <p className="text-gray-300">{previewModel.category}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Status</p>
+                            <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[10px]">ENABLED</span>
+                          </div>
+                        </div>
 
-## 脚本配置
-### 数据生成 (Generation)
-\`\`\`sql
-${mdModel.scripts.generation}
-\`\`\`
+                        <section>
+                          <h2 className="text-lg font-bold text-purple-400 mb-3 flex items-center gap-2">
+                             <div className="w-1.5 h-4 bg-purple-500 rounded-full"></div>
+                             Audit Logic Description
+                          </h2>
+                          <p className="text-gray-300 leading-relaxed text-sm bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
+                            {previewModel.auditLogic}
+                          </p>
+                        </section>
 
-### 结果视图 (View)
-\`\`\`sql
-${mdModel.scripts.view}
-\`\`\`
+                        <section>
+                          <h2 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">
+                             <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+                             Statutory Basis
+                          </h2>
+                          <div className="space-y-2">
+                            {previewModel.laws.map(law => (
+                              <div key={law} className="flex items-center gap-2 text-gray-400 bg-gray-800/30 px-3 py-2 rounded-lg border border-gray-700/30">
+                                <Link size={12} className="text-blue-400/50" />
+                                {law}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
 
-### 统计视图 (Statistics)
-\`\`\`sql
-${mdModel.scripts.statistics}
-\`\`\`
-`}
+                        <section>
+                          <h2 className="text-lg font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                             <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+                             Checkpoints Configuration
+                          </h2>
+                          <div className="space-y-4">
+                            {previewModel.checkpoints.map(cp => (
+                              <div key={cp.id} className="p-5 bg-gray-800/40 rounded-2xl border border-gray-700 flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-bold text-white">{cp.name}</h3>
+                                  <span className="text-[10px] bg-gray-700 px-2 py-1 rounded text-gray-400 font-mono">CHECKPOINT</span>
+                                </div>
+                                <p className="text-xs text-gray-400">{cp.description}</p>
+                                <div className="mt-2 space-y-2">
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase">Standard Tables</p>
+                                  {cp.standardTables.map(st => (
+                                    <div key={st.tableName} className="text-[11px] text-emerald-400/80 font-mono bg-emerald-500/5 px-2 py-1 rounded">
+                                      {st.tableName}: {st.fields.join(', ')}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      </div>
+                    )}
+                    {activeFile === 'generation.sql' && <div className="text-emerald-400">/* Generated output script */\n\n{previewModel.scripts.generation}</div>}
+                    {activeFile === 'view.sql' && <div className="text-blue-400">/* View logic script */\n\n{previewModel.scripts.view}</div>}
+                    {activeFile === 'statistics.sql' && <div className="text-orange-400">/* Statistics calculation script */\n\n{previewModel.scripts.statistics}</div>}
+                    {getMaterialsForModel(previewModel).some(m => m.name === activeFile) && (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400 italic">
+                        <div className="w-20 h-20 bg-gray-800 rounded-3xl flex items-center justify-center text-gray-600 mb-6 border border-gray-700">
+                          <FileText size={40} />
+                        </div>
+                        <p className="text-sm font-medium text-gray-500 mb-2">文件：{activeFile}</p>
+                        <p className="text-xs text-gray-600 text-center max-w-xs">
+                          参考文件内容由审计知识库引擎动态索引及分片存储，预览模式主要展示模型关联的可读性资产。
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+
               <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
                 <button 
-                  onClick={() => {
-                    const mdText = `# ${mdModel.name}\n\n**分类**: ${mdModel.category}\n**版本**: ${mdModel.version}\n**创建人**: ${mdModel.creator}\n**更新时间**: ${new Date(mdModel.updatedAt).toLocaleString()}\n\n## 描述\n${mdModel.description}\n\n## 审计思路\n${mdModel.auditLogic}\n\n## 法规依据\n${mdModel.laws.map(l => `- ${l}`).join('\n')}\n\n## 脚本配置\n### 数据生成 (Generation)\n\`\`\`sql\n${mdModel.scripts.generation}\n\`\`\`\n\n### 结果视图 (View)\n\`\`\`sql\n${mdModel.scripts.view}\n\`\`\`\n\n### 统计视图 (Statistics)\n\`\`\`sql\n${mdModel.scripts.statistics}\n\`\`\``;
-                    navigator.clipboard.writeText(mdText);
-                    alert('已复制到剪贴板');
-                  }}
-                  className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-500/20"
+                  onClick={() => setPreviewModel(null)}
+                  className="px-8 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
                 >
-                  <Copy size={16} />
-                  复制 Markdown
+                  确认
                 </button>
               </div>
             </motion.div>
@@ -487,110 +711,227 @@ ${mdModel.scripts.statistics}
           </div>
         )}
       </AnimatePresence>
+
+      {/* Delete Version Modal */}
+      <AnimatePresence>
+        {showDeleteVersionModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteVersionModal(null)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={32} />
+                </div>
+                <h3 className="text-lg font-normal text-gray-900 tracking-tight mb-2">确认删除版本？</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  是否确认删除版本 <span className="font-mono font-bold text-gray-900">{showDeleteVersionModal.version.version}</span>？此操作不可撤销。
+                </p>
+              </div>
+              <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button 
+                  onClick={() => setShowDeleteVersionModal(null)}
+                  className="px-6 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-all"
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={confirmDeleteVersion}
+                  className="px-8 py-2.5 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-500/20 active:scale-95"
+                >
+                  确认删除
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function ModelCard({ 
+function ModelRow({ 
   model, 
-  onClick, 
-  onExport,
+  isExpanded,
+  onToggleExpand,
+  onSelect,
   onEdit,
-  onDelete,
-  onViewMD
+  onDeleteVersion,
+  onPublishVersion,
+  onSetDefault,
+  onPreview,
+  onDownload,
+  onDeleteModel
 }: { 
   model: AuditModel; 
-  onClick: () => void; 
-  onExport: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onViewMD: () => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onSelect: () => void;
+  onEdit: (v: ModelVersion) => void;
+  onDeleteVersion: (v: ModelVersion) => void;
+  onPublishVersion: (v: ModelVersion) => void;
+  onSetDefault: (v: ModelVersion) => void;
+  onPreview: (v: ModelVersion) => void;
+  onDownload: (v: ModelVersion) => void;
+  onDeleteModel: () => void;
 }) {
+  // Sort versions by createdAt descending
+  const sortedVersions = [...model.versions].sort((a, b) => b.createdAt - a.createdAt);
+
   return (
-    <div 
-      onClick={onClick}
-      className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-xl hover:shadow-gray-200/50 transition-all cursor-pointer group relative overflow-hidden"
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn(
-          "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
-          model.status === 'enabled' ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-400"
-        )}>
-          <BrainCircuit size={24} />
-        </div>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewMD();
-            }}
-            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
-            title="查看 Markdown"
-          >
-            <FileText size={16} />
-          </button>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-            title="编辑模型"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onExport();
-            }}
-            className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-            title="导出模型"
-          >
-            <Download size={16} />
-          </button>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-            title="删除模型"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{model.category}</span>
-          <span className="text-[10px] font-bold text-gray-300">•</span>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{model.version}</span>
-        </div>
-        <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
-          {model.name}
-        </h3>
-        <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">
-          {model.description}
-        </p>
-      </div>
-
-      <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <User size={12} />
+    <React.Fragment>
+      <tr 
+        className={cn(
+          "hover:bg-gray-50/80 cursor-pointer transition-colors group border-b border-gray-50",
+          isExpanded && "bg-blue-50/30"
+        )}
+        onClick={onToggleExpand}
+      >
+        <td className="px-6 py-4">
+          <ChevronRight size={18} className={cn("text-gray-400 transition-transform", isExpanded && "rotate-90 text-blue-500")} />
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+              model.status === 'published' ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"
+            )}>
+              <Zap size={16} />
+            </div>
+            <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{model.name}</span>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{model.category}</span>
+        </td>
+        <td className="px-6 py-4 max-w-[300px]">
+          <p className="text-xs text-gray-500 truncate" title={model.description}>{model.description}</p>
+        </td>
+        <td className="px-6 py-4">
+          <span className="text-xs font-mono font-bold text-blue-600">{model.version}</span>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <User size={14} className="text-gray-400" />
             <span>{model.creator}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <Clock size={12} />
-            <span>{new Date(model.updatedAt).toLocaleDateString()}</span>
-          </div>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
-          <ChevronRight size={18} />
-        </div>
-      </div>
-    </div>
+        </td>
+      </tr>
+      <AnimatePresence>
+        {isExpanded && (
+          <tr>
+            <td colSpan={6} className="bg-gray-50/50 p-0 overflow-hidden">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="px-6 py-4"
+              >
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      <tr>
+                        <th className="px-6 py-3">版本号</th>
+                        <th className="px-6 py-3">创建-发布时间</th>
+                        <th className="px-6 py-3">创建人</th>
+                        <th className="px-6 py-3">状态</th>
+                        <th className="px-6 py-3 text-right">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {sortedVersions.map((v) => (
+                        <tr key={v.version} className="hover:bg-gray-50/50 transition-colors group/row">
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-mono font-bold text-gray-700">{v.version}</span>
+                              {v.isDefault && (
+                                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">默认</span>
+                              )}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onPreview(v); }}
+                                className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-all ml-1"
+                                title="预览"
+                                id={`preview-v-${v.version}`}
+                              >
+                                <Eye size={14} />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-xs text-gray-500">
+                            {new Date(v.createdAt).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className="text-xs text-gray-600">{v.creator}</span>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className={cn(
+                              "text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded",
+                              (v.status || model.status) === 'published' ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"
+                            )}>
+                              {(v.status || model.status) === 'published' ? '已发布' : '草稿'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <div className="flex items-center justify-end gap-3 px-2">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onEdit(v); }}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="编辑"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              {(v.status || model.status) === 'draft' && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); onPublishVersion(v); }}
+                                  className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                  title="发布"
+                                >
+                                  <CheckCircle2 size={14} />
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onDownload(v); }}
+                                className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                title="下载"
+                              >
+                                <Download size={14} />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onDeleteVersion(v); }}
+                                disabled={v.isDefault}
+                                className={cn(
+                                  "p-1.5 rounded-lg transition-all opacity-0 group-hover/row:opacity-100",
+                                  v.isDefault 
+                                    ? "text-gray-200 cursor-not-allowed" 
+                                    : "text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                )}
+                                title={v.isDefault ? "默认版本不可删除" : "删除"}
+                                id={`delete-v-${v.version}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            </td>
+          </tr>
+        )}
+      </AnimatePresence>
+    </React.Fragment>
   );
 }

@@ -87,16 +87,16 @@ export default function SystemPermissionManagement() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="p-3 font-bold text-gray-600">菜单名称</th>
-                    <th className="p-3 font-bold text-gray-600">路由路径</th>
-                    <th className="p-3 font-bold text-gray-600">类型</th>
-                    <th className="p-3 font-bold text-gray-600">可见性</th>
-                    <th className="p-3 font-bold text-gray-600">操作</th>
+                    <th className="p-3 font-normal text-gray-600">菜单名称</th>
+                    <th className="p-3 font-normal text-gray-600">路由路径</th>
+                    <th className="p-3 font-normal text-gray-600">类型</th>
+                    <th className="p-3 font-normal text-gray-600">可见性</th>
+                    <th className="p-3 font-normal text-gray-600">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   <tr className="hover:bg-gray-50">
-                    <td className="p-3 font-medium">系统管理</td>
+                    <td className="p-3 font-normal">系统管理</td>
                     <td className="p-3 text-gray-500">/system</td>
                     <td className="p-3"><span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded">目录</span></td>
                     <td className="p-3"><span className="text-green-600">显示</span></td>

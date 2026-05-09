@@ -28,6 +28,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { CorrectionRule, RuleParam } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from './Pagination';
 
 const CATEGORIES = [
   { id: 'all', label: '全部', icon: <Filter size={18} />, color: 'text-gray-600', bg: 'bg-gray-50' },
@@ -98,11 +99,22 @@ export default function CorrectionRuleMgmt() {
   const [editingRule, setEditingRule] = React.useState<CorrectionRule | null>(null);
   const [showDeleteModal, setShowDeleteModal] = React.useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
+
   const filteredRules = rules.filter(r => {
     const matchesCategory = activeCategory === 'all' || r.category === activeCategory;
     const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // Reset to first page when filtering
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeCategory]);
+
+  const totalPages = Math.ceil(filteredRules.length / pageSize);
+  const paginatedRules = filteredRules.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleToggleStatus = (id: string) => {
     setRules(rules.map(r => r.id === id ? { ...r, status: r.status === 'enabled' ? 'disabled' : 'enabled' } : r));
@@ -193,21 +205,21 @@ export default function CorrectionRuleMgmt() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">规则名称</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">状态</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">更新时间</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">操作</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">规则名称</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">状态</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">更新时间</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredRules.map((rule) => (
+              {paginatedRules.map((rule) => (
                 <tr key={rule.id} className={cn(
                   "hover:bg-gray-50/50 transition-colors group",
                   rule.status === 'disabled' && "opacity-60"
                 )}>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                      <div className="text-sm font-normal text-gray-900 group-hover:text-blue-600 transition-colors">
                         {rule.name}
                       </div>
                       <div className="text-xs text-gray-400 mt-1 line-clamp-1">{rule.logic}</div>
@@ -261,6 +273,14 @@ export default function CorrectionRuleMgmt() {
               )}
             </tbody>
           </table>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredRules.length}
+            pageSize={pageSize}
+          />
         </div>
       </div>
 

@@ -28,6 +28,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { DataSource, DictionaryEntry } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from './Pagination';
 
 const MOCK_DATA_SOURCES_LIST = [
   { id: 'ds1', name: 'xxx县财政预算管理库', type: 'Oracle' },
@@ -133,6 +134,13 @@ export default function DataSourcePreview() {
   }, [selectedTable, dictionaryData]);
 
   const currentDataRows = selectedTable ? (MOCK_DATA_ROWS_BY_TABLE[selectedTable] || []) : [];
+
+  // Reset page when table changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTable, pageSize]);
+
+  const totalPagesForData = Math.ceil(currentDataRows.length / pageSize);
 
   // Reset table selection when data source changes
   React.useEffect(() => {
@@ -303,11 +311,6 @@ export default function DataSourcePreview() {
                   
                   <div className="h-6 w-px bg-gray-200 mx-1" />
                   
-                  <button className="flex items-center gap-2 px-3 py-1.5 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all text-xs font-bold">
-                    <RefreshCw size={14} className="text-blue-600" />
-                    <span>同步</span>
-                  </button>
-
                   <button 
                     onClick={handleExport}
                     className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-xs font-bold"
@@ -370,13 +373,6 @@ export default function DataSourcePreview() {
                               一键摘要
                             </button>
                             <button 
-                              onClick={handleExport}
-                              className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-xs font-bold"
-                            >
-                              <Download size={16} />
-                              导出结构 Excel
-                            </button>
-                            <button 
                               onClick={handleSave}
                               disabled={isSaving}
                               className={cn(
@@ -409,7 +405,7 @@ export default function DataSourcePreview() {
                                   <tr key={col.name} className="hover:bg-gray-50/30 transition-colors group">
                                     <td className="px-6 py-5">
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-sm font-mono font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{col.name}</span>
+                                        <span className="text-sm font-mono font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{col.name}</span>
                                         <div className="flex items-center gap-2">
                                           <span className="text-[10px] font-bold py-0.5 px-2 bg-gray-100 text-gray-500 rounded-md uppercase">
                                             {col.type} {col.length ? `(${col.length})` : ''}
@@ -563,40 +559,13 @@ export default function DataSourcePreview() {
                               <span className="text-xs text-gray-500 font-medium">总记录规模估算: <span className="text-gray-900 font-bold">{currentTableInfo?.rows.toLocaleString()}</span></span>
                             </div>
                             
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button 
-                                  disabled={currentPage === 1}
-                                  onClick={() => setCurrentPage(p => p - 1)}
-                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 disabled:opacity-20 transition-all"
-                                >
-                                  <ChevronLeft size={16} />
-                                </button>
-                                
-                                <div className="flex items-center gap-1 px-1 bg-white border border-gray-200 rounded-lg shadow-sm py-0.5">
-                                  {Array.from({ length: Math.min(5, Math.ceil(currentDataRows.length / pageSize)) || 1 }).map((_, i) => (
-                                    <button
-                                      key={i + 1}
-                                      onClick={() => setCurrentPage(i + 1)}
-                                      className={cn(
-                                        "w-7 h-7 rounded-md text-[11px] font-bold transition-all",
-                                        currentPage === (i + 1) ? "bg-blue-600 text-white" : "text-gray-500 hover:text-blue-600"
-                                      )}
-                                    >
-                                      {i + 1}
-                                    </button>
-                                  ))}
-                                </div>
-                                
-                                <button 
-                                  disabled={currentPage >= Math.ceil(currentDataRows.length / pageSize)}
-                                  onClick={() => setCurrentPage(p => p + 1)}
-                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 disabled:opacity-20 transition-all"
-                                >
-                                  <ChevronRight size={16} />
-                                </button>
-                              </div>
-                            </div>
+                            <Pagination 
+                              currentPage={currentPage}
+                              totalPages={totalPagesForData}
+                              onPageChange={setCurrentPage}
+                              totalItems={currentDataRows.length}
+                              pageSize={pageSize}
+                            />
                           </div>
                         </div>
                       </div>

@@ -267,11 +267,23 @@ export interface ModelDataSource {
   fields: string[];
 }
 
+export interface ModelCheckpoint {
+  id: string;
+  name: string;
+  description: string;
+  standardTables: {
+    tableName: string;
+    fields: string[];
+  }[];
+  script: string;
+  ruleId?: string; // Track which rule this was based on
+}
+
 export interface AuditModel {
   id: string;
   name: string;
   category: string;
-  status: 'enabled' | 'disabled';
+  status: 'published' | 'draft';
   version: string;
   creator: string;
   createdAt: number;
@@ -279,8 +291,9 @@ export interface AuditModel {
   description: string;
   auditLogic: string;
   laws: string[];
-  dataSources?: ModelDataSource[];
-  ruleIds?: string[];
+  knowledgeBaseId?: string;
+  materialIds?: string[];
+  checkpoints: ModelCheckpoint[];
   auditProcessMd?: string;
   scripts: {
     generation: string;
@@ -302,6 +315,7 @@ export interface ModelVersion {
   createdAt: number;
   content: string;
   isDefault: boolean;
+  status?: 'published' | 'draft';
 }
 
 export interface RuleFixedCheckpoint {
@@ -341,6 +355,10 @@ export interface AuditRule {
   ruleType: 'general' | 'dedicated';
   fixedCheckpoints: RuleFixedCheckpoint[];
   configurableCheckpoints: RuleConfigurableCheckpoint[];
+  standardTables: {
+    tableName: string;
+    fields: string[];
+  }[];
   outputData: string;
   apiUrl: string;
   status: 'enabled' | 'disabled';

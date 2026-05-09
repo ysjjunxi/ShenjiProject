@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from './Pagination';
 
 // Mock Data
 const MOCK_DATABASES = [
@@ -46,7 +47,8 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.98,
     status: '生效',
-    matchDesc: '完全匹配'
+    matchDesc: '完全匹配',
+    unmatchedSampleData: '12500.50, 480.00'
   },
   {
     id: 'm2',
@@ -61,7 +63,8 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.95,
     status: '生效',
-    matchDesc: '语义匹配'
+    matchDesc: '语义匹配',
+    unmatchedSampleData: '2023-12-01, 2024/01/15'
   },
   {
     id: 'm3',
@@ -76,7 +79,8 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.82,
     status: '草稿',
-    matchDesc: '依赖上下文'
+    matchDesc: '依赖上下文',
+    unmatchedSampleData: '0, 1, 2 (编码需映射)'
   },
   {
     id: 'm5',
@@ -91,7 +95,8 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.88,
     status: '草稿',
-    matchDesc: '语义匹配'
+    matchDesc: '语义匹配',
+    unmatchedSampleData: 'ACTIVE, PENDING'
   },
   {
     id: 'm4',
@@ -106,7 +111,8 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.99,
     status: '生效',
-    matchDesc: '-'
+    matchDesc: '-',
+    unmatchedSampleData: '33010219***, 33021019***'
   },
   {
     id: 'm_unmap_1',
@@ -121,7 +127,8 @@ const MOCK_MAPPING_DATA = [
     matched: false,
     confidence: 0,
     status: '未映射',
-    matchDesc: '-'
+    matchDesc: '-',
+    unmatchedSampleData: 'VCR2024001, VCR2024002'
   },
   {
     id: 'm_unmap_2',
@@ -136,7 +143,8 @@ const MOCK_MAPPING_DATA = [
     matched: false,
     confidence: 0,
     status: '未映射',
-    matchDesc: '-'
+    matchDesc: '-',
+    unmatchedSampleData: '教育局, 财政局'
   },
   {
     id: 'm_unmap_3',
@@ -151,7 +159,8 @@ const MOCK_MAPPING_DATA = [
     matched: false,
     confidence: 0,
     status: '未映射',
-    matchDesc: '-'
+    matchDesc: '-',
+    unmatchedSampleData: '借方, 贷方'
   },
   {
     id: 'm6',
@@ -166,7 +175,8 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.98,
     status: '生效',
-    matchDesc: '完全匹配'
+    matchDesc: '完全匹配',
+    unmatchedSampleData: '1100234567, 1100234568'
   },
   {
     id: 'm7',
@@ -181,7 +191,24 @@ const MOCK_MAPPING_DATA = [
     matched: true,
     confidence: 0.99,
     status: '生效',
-    matchDesc: '语义匹配'
+    matchDesc: '语义匹配',
+    unmatchedSampleData: '00123456, 00123457'
+  },
+  {
+    id: 'm_unmap_db3',
+    dbId: 'db3',
+    dbName: '无',
+    sourceTable: '无',
+    sourceField: '无',
+    targetDb: '系统生产标准库',
+    targetTable: 'std_tax_invoice',
+    targetField: 'tax_period',
+    targetFieldCn: '税款所属期',
+    matched: false,
+    confidence: 0,
+    status: '未映射',
+    matchDesc: '-',
+    unmatchedSampleData: '202312, 202401'
   }
 ];
 
@@ -224,6 +251,13 @@ export default function DataMappingMgmt() {
   const [showTestModal, setShowTestModal] = useState(false);
   const [testScript, setTestScript] = useState("SELECT\n  source.id_no,\n  source.name\nFROM \n  ins_person_info source\nLIMIT 10;");
   const [testResult, setTestResult] = useState<any[] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Reset to first page when filtering or selecting database
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, tableFilter, selectedDb]);
 
   const handleManualMapSubmit = () => {
     if (!showManualMapModal) return;
@@ -240,7 +274,8 @@ export default function DataMappingMgmt() {
           matched: true,
           confidence: 1.0,
           matchDesc: '手动映射',
-          dbId: selectedDb || m.dbId
+          dbId: selectedDb || m.dbId,
+          unmatchedSampleData: 'MAPPED_SAMPLE_1, MAPPED_SAMPLE_2'
         };
       }
       return m;
@@ -282,7 +317,8 @@ export default function DataMappingMgmt() {
               matched: true,
               confidence: 0.85,
               status: '草稿',
-              matchDesc: 'AI 语义映射'
+              matchDesc: 'AI 语义映射',
+              unmatchedSampleData: 'SAMPLE_DATA_1, SAMPLE_DATA_2'
             },
             ...prev
           ]);
@@ -384,6 +420,9 @@ export default function DataMappingMgmt() {
     acc[key].sources.push(curr);
     return acc;
   }, {} as Record<string, any>));
+
+  const totalPages = Math.ceil(groupedData.length / pageSize);
+  const paginatedGroups = groupedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const uniqueStandardTables = Array.from(new Set(mappingData.filter(m => m.dbId === selectedDb).map(m => m.targetTable))).filter(Boolean);
 
@@ -554,18 +593,18 @@ export default function DataMappingMgmt() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50/80 border-b border-gray-100 sticky top-0 z-10">
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest min-w-[200px] bg-gray-50/80 backdrop-blur-sm">标准表 (所属库)</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest min-w-[180px] bg-gray-50/80 backdrop-blur-sm">标准字段 (字段名 / 中文)</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest min-w-[150px] bg-gray-50/80 backdrop-blur-sm">源数据库</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest min-w-[150px] bg-gray-50/80 backdrop-blur-sm">源表</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest min-w-[120px] bg-gray-50/80 backdrop-blur-sm">源字段</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest text-center bg-gray-50/80 backdrop-blur-sm">置信度</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest text-center bg-gray-50/80 backdrop-blur-sm">状态</th>
-                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-widest text-right bg-gray-50/80 backdrop-blur-sm">操作</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest min-w-[200px] bg-gray-50/80 backdrop-blur-sm">标准表 (所属库)</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest min-w-[180px] bg-gray-50/80 backdrop-blur-sm">标准字段 (字段名 / 中文)</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest min-w-[150px] bg-gray-50/80 backdrop-blur-sm">源数据库</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest min-w-[150px] bg-gray-50/80 backdrop-blur-sm">源表</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest min-w-[120px] bg-gray-50/80 backdrop-blur-sm">源字段</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest text-center bg-gray-50/80 backdrop-blur-sm">置信度</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest text-center bg-gray-50/80 backdrop-blur-sm">状态</th>
+                        <th className="px-4 py-3 text-xs font-normal text-gray-500 uppercase tracking-widest text-right bg-gray-50/80 backdrop-blur-sm">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {groupedData.length > 0 ? groupedData.map((group, groupIdx) => {
+                      {paginatedGroups.length > 0 ? paginatedGroups.map((group, groupIdx) => {
                         return group.sources.map((item: any, itemIdx: number) => {
                           const isFirstRow = itemIdx === 0;
                           return (
@@ -575,7 +614,7 @@ export default function DataMappingMgmt() {
                                 <>
                                   <td className="px-4 py-3 bg-gray-50/30" rowSpan={group.sources.length}>
                                     <div className="flex flex-col gap-1.5">
-                                      <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs relative group/tooltip">
+                                      <div className="flex items-center gap-1.5 text-blue-700 font-normal text-xs relative group/tooltip">
                                         <Table size={14} className="text-blue-400" />
                                         <span>{group.targetTable || '-'}</span>
                                         {group.targetTableDesc && (
@@ -604,7 +643,7 @@ export default function DataMappingMgmt() {
                               
                               {/* Source columns */}
                               <td className="px-4 py-3">
-                                <span className={cn("text-xs font-medium", item.dbName === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.dbName}</span>
+                                <span className={cn("text-xs font-normal", item.dbName === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.dbName}</span>
                               </td>
                               <td className="px-4 py-3">
                                 <span className={cn("text-xs font-medium", item.sourceTable === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.sourceTable}</span>
@@ -687,7 +726,7 @@ export default function DataMappingMgmt() {
                         });
                       }) : (
                         <tr>
-                          <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
+                          <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
                             <Database size={24} className="mx-auto mb-2 text-gray-300" />
                             <p className="text-xs">暂无映射数据</p>
                           </td>
@@ -697,6 +736,15 @@ export default function DataMappingMgmt() {
                   </table>
                 </div>
               </div>
+
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={groupedData.length}
+                pageSize={pageSize}
+                className="mt-0"
+              />
             </div>
           </>
         ) : (

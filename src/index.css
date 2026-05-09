@@ -8,6 +8,11 @@
 }
 
 @layer base {
+  input:focus, textarea:focus, select:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   html, body, #root {
     font-family: var(--font-sans);
     height: 100%;

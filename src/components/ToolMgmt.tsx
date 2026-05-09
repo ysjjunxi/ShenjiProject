@@ -24,6 +24,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { AuditTool, ToolParam } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from './Pagination';
 
 const BUILT_IN_TOOLS: AuditTool[] = [
   {
@@ -183,6 +184,8 @@ export default function ToolMgmt() {
   const [editingTool, setEditingTool] = React.useState<AuditTool | null>(null);
   const [showDeleteModal, setShowDeleteModal] = React.useState<string | null>(null);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
 
   const filteredTools = tools.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -190,6 +193,14 @@ export default function ToolMgmt() {
     const matchesType = typeFilter === 'all' || t.type === typeFilter;
     return matchesSearch && matchesType;
   });
+
+  // Reset to first page when filtering
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter]);
+
+  const totalPages = Math.ceil(filteredTools.length / pageSize);
+  const paginatedTools = filteredTools.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleAddTool = () => {
     setEditingTool({
@@ -348,16 +359,16 @@ export default function ToolMgmt() {
           <table className="w-full text-sm text-left">
             <thead className="text-[10px] text-gray-400 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-4 font-bold">工具名称</th>
-                <th className="px-6 py-4 font-bold">功能描述</th>
-                <th className="px-6 py-4 font-bold">参数数量</th>
-                <th className="px-6 py-4 font-bold">类型</th>
-                <th className="px-6 py-4 font-bold">状态</th>
-                <th className="px-6 py-4 font-bold">操作</th>
+                <th className="px-6 py-4 font-normal">工具名称</th>
+                <th className="px-6 py-4 font-normal">功能描述</th>
+                <th className="px-6 py-4 font-normal">参数数量</th>
+                <th className="px-6 py-4 font-normal">类型</th>
+                <th className="px-6 py-4 font-normal">状态</th>
+                <th className="px-6 py-4 font-normal">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredTools.map((tool) => (
+              {paginatedTools.map((tool) => (
                 <tr key={tool.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div 
@@ -372,7 +383,7 @@ export default function ToolMgmt() {
                         {TYPE_LABELS[tool.type].icon}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{tool.name}</p>
+                        <p className="font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{tool.name}</p>
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                           {tool.isBuiltIn ? 'BUILT-IN' : 'CUSTOM'}
                         </p>
@@ -427,6 +438,14 @@ export default function ToolMgmt() {
               ))}
             </tbody>
           </table>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredTools.length}
+            pageSize={pageSize}
+          />
           
           {filteredTools.length === 0 && (
             <div className="py-24 text-center">

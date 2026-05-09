@@ -25,6 +25,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { DataSource, DataSourceType } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from './Pagination';
 
 const DATABASE_TYPES: DataSourceType[] = ['SQLServer', 'Oracle', 'MySQL', '神通'];
 
@@ -283,11 +284,11 @@ export default function DataSourceAccess({ onConfigure }: DataSourceAccessProps)
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">数据源名称</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">类型</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">连接地址</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">状态</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">操作</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">数据源名称</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">类型</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">连接地址</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider">状态</th>
+                <th className="px-6 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-wider text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -304,7 +305,7 @@ export default function DataSourceAccess({ onConfigure }: DataSourceAccessProps)
                         <Database size={20} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">{ds.name}</p>
+                        <p className="text-sm font-normal text-gray-900">{ds.name}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">库名: {ds.databaseName}</p>
                       </div>
                     </div>
@@ -351,13 +352,6 @@ export default function DataSourceAccess({ onConfigure }: DataSourceAccessProps)
                         <Power size={16} />
                       </button>
                       <button 
-                        onClick={() => onConfigure?.(ds.id)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                        title="配置"
-                      >
-                        <Settings size={16} />
-                      </button>
-                      <button 
                         onClick={() => handleEdit(ds)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                       >
@@ -376,47 +370,13 @@ export default function DataSourceAccess({ onConfigure }: DataSourceAccessProps)
             </tbody>
           </table>
           
-          {/* Pagination */}
-          {filteredSources.length > 0 && (
-            <div className="px-6 py-4 bg-gray-50/30 border-t border-gray-100 flex items-center justify-between">
-              <div className="text-xs text-gray-500">
-                共 <span className="font-bold text-gray-900">{filteredSources.length}</span> 条数据，
-                当前显示第 <span className="font-bold text-gray-900">{(currentPage - 1) * PAGE_SIZE + 1}</span> - <span className="font-bold text-gray-900">{Math.min(currentPage * PAGE_SIZE, filteredSources.length)}</span> 条
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={cn(
-                        "w-8 h-8 rounded-lg text-xs font-bold transition-all",
-                        currentPage === page 
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
-                          : "text-gray-500 hover:bg-gray-100"
-                      )}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredSources.length}
+            pageSize={PAGE_SIZE}
+          />
 
           {filteredSources.length === 0 && (
             <div className="py-24 text-center">

@@ -43,6 +43,7 @@ import { PersonalKnowledgeDoc, ParseStatus, Message, DocChunk } from '@/src/type
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Pagination from './Pagination';
 
 const MOCK_CHUNKS: Record<string, DocChunk[]> = {
   'p-1': [
@@ -250,6 +251,8 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [inputMessage, setInputMessage] = React.useState('');
 
+  const [activeDropdownId, setActiveDropdownId] = React.useState<string | null>(null);
+
   const filteredDocs = React.useMemo(() => {
     return docs
       .filter(doc => 
@@ -408,22 +411,19 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
   return (
     <div className="flex flex-col h-full bg-[#f8fafc]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-8 h-[90px] flex items-center justify-between shrink-0 shadow-sm z-10">
+      <div className="bg-white border-b border-gray-100 px-6 h-[90px] flex items-center justify-between shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-4">
           {onBack && (
             <button 
               onClick={onBack}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all active:scale-90 mr-2"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all active:scale-90"
             >
               <ChevronRight className="rotate-180" size={20} />
             </button>
           )}
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-100">
-            <Book size={24} />
-          </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{title || '个人知识库'}</h1>
-            <p className="text-sm text-gray-400 font-bold mt-0.5">{title ? `正在浏览 ${title} 下的文档库` : '私有资料集中管理与智能解析，仅本人可见'}</p>
+            <h1 className="text-xl font-normal text-gray-900 tracking-tight">{title || '个人知识库'}</h1>
+            <p className="text-sm text-gray-400 font-normal mt-0.5">{title ? `正在浏览 ${title} 下的文档库` : '私有资料集中管理与智能解析，仅本人可见'}</p>
           </div>
         </div>
         
@@ -502,7 +502,6 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
                       />
                     </th>
                     <th className="px-4 py-3 font-medium">文档信息</th>
-                    <th className="px-4 py-3 font-medium">标签</th>
                     <th className="px-4 py-3 font-medium">格式 / 大小</th>
                     <th className="px-4 py-3 font-medium">上传日期</th>
                     <th className="px-4 py-3 font-medium">解析状态</th>
@@ -532,7 +531,7 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
                                   type="text"
                                   value={newName}
                                   onChange={(e) => setNewName(e.target.value)}
-                                  className="text-sm font-bold text-gray-900 border-b border-blue-500 outline-none w-full bg-transparent px-0"
+                                  className="text-sm font-normal text-gray-900 border-b border-blue-500 outline-none w-full bg-transparent px-0"
                                   autoFocus
                                   onKeyPress={(e) => e.key === 'Enter' && confirmRename()}
                                   onBlur={confirmRename}
@@ -543,15 +542,7 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 group/title">
-                                <p className="text-sm font-bold text-gray-900 truncate max-w-[300px]">{doc.name}</p>
-                                {!readOnly && (
-                                  <button 
-                                    onClick={() => handleRename(doc.id, doc.name)}
-                                    className="p-1 text-gray-400 hover:text-blue-600 transition-all font-bold"
-                                  >
-                                    <Edit3 size={12} />
-                                  </button>
-                                )}
+                                <p className="text-sm font-normal text-gray-900 truncate max-w-[300px]">{doc.name}</p>
                                 {doc.id === 'p-1' && (
                                   <span title="已被项目引用，核心内容受保护">
                                     <Shield size={12} className="text-amber-500 shrink-0" />
@@ -561,13 +552,6 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
                             )}
                             <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[300px]">{doc.description}</p>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          {doc.tags.map((tag, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-lg border border-gray-100">{tag}</span>
-                          ))}
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -592,43 +576,69 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
                             <Layers size={16} />
                           </button>
                           {!readOnly && (
-                            <>
-                              <button 
-                                onClick={() => handleRefresh(doc.id)}
-                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-white rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all font-bold"
-                                title="刷新解析状态"
-                              >
-                                <RefreshCw size={16} className={cn(doc.status === 'parsing' && "animate-spin")} />
-                              </button>
-                              <button 
-                                onClick={() => handleOpenDetail(doc)}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all font-bold"
-                                title="解析预览与编辑"
-                              >
-                                <Edit3 size={16} />
-                              </button>
-                            </>
+                            <button 
+                              onClick={() => handleRename(doc.id, doc.name)}
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all"
+                              title="重命名"
+                            >
+                              <Edit3 size={16} />
+                            </button>
                           )}
-                          <div className="relative group/popover inline-block">
-                            <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all">
+                          <div className="relative inline-block">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(activeDropdownId === doc.id ? null : doc.id);
+                              }}
+                              className={cn(
+                                "p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all",
+                                activeDropdownId === doc.id && "bg-gray-100 text-gray-900 border-gray-200"
+                              )} 
+                              title="更多操作"
+                            >
                               <MoreVertical size={16} />
                             </button>
-                            <div className="absolute right-0 bottom-full mb-2 w-36 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover/popover:opacity-100 group-hover/popover:visible pt-2 pb-2 z-20">
-                              <button onClick={() => handleDownload(doc, 'original')} className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
-                                <Download size={14} /> 原格式下载
-                              </button>
-                              <button onClick={() => handleDownload(doc, 'text')} className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
-                                <FileCode size={14} /> Markdown下载
-                              </button>
-                              {!readOnly && (
+                            
+                            <AnimatePresence>
+                              {activeDropdownId === doc.id && (
                                 <>
-                                  <div className="h-px bg-gray-50 my-1" />
-                                  <button onClick={() => handleDelete([doc.id])} className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2">
-                                    <Trash2 size={14} /> 删除文档
-                                  </button>
+                                  <div 
+                                    className="fixed inset-0 z-20" 
+                                    onClick={() => setActiveDropdownId(null)}
+                                  />
+                                  <motion.div 
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 z-30"
+                                  >
+                                    <button 
+                                      onClick={() => { handleDownload(doc, 'original'); setActiveDropdownId(null); }} 
+                                      className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                      <Download size={14} /> 下载源格式
+                                    </button>
+                                    <button 
+                                      onClick={() => { handleDownload(doc, 'text'); setActiveDropdownId(null); }} 
+                                      className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                      <FileCode size={14} /> 下载markdown
+                                    </button>
+                                    {!readOnly && (
+                                      <>
+                                        <div className="h-px bg-gray-100 my-1.5" />
+                                        <button 
+                                          onClick={() => { handleDelete([doc.id]); setActiveDropdownId(null); }} 
+                                          className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2"
+                                        >
+                                          <Trash2 size={14} /> 删除文档
+                                        </button>
+                                      </>
+                                    )}
+                                  </motion.div>
                                 </>
                               )}
-                            </div>
+                            </AnimatePresence>
                           </div>
                         </div>
                       </td>
@@ -650,41 +660,13 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
 
             {/* Total items info in footer with pagination */}
             <div className="px-6 py-4 bg-gray-50/30 border-t border-gray-100 flex items-center justify-between shrink-0 font-medium">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-[#475569]">
-                展示本页 {paginatedDocs.length} 条 · 总数据量 {filteredDocs.length} 条
-              </p>
-              <div className="flex items-center gap-2">
-                <button 
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                  className="p-1.5 hover:bg-white rounded-lg text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-transparent hover:border-gray-100 shadow-sm"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button 
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={cn(
-                        "w-8 h-8 rounded-lg text-xs font-bold transition-all",
-                        currentPage === i + 1 
-                          ? "bg-blue-600 text-white shadow-lg shadow-blue-100" 
-                          : "text-gray-400 hover:bg-white hover:text-gray-600 border border-transparent"
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <button 
-                  disabled={currentPage === totalPages || totalPages === 0}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                  className="p-1.5 hover:bg-white rounded-lg text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-transparent hover:border-gray-100 shadow-sm"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filteredDocs.length}
+                pageSize={itemsPerPage}
+              />
             </div>
           </div>
         </div>
@@ -899,7 +881,7 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
                    className="px-8 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
                  >
                    <Database size={16} />
-                   确认创建并处理分片
+                   确认提交
                  </button>
               </div>
             </motion.div>

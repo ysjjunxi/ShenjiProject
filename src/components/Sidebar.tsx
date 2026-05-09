@@ -7,7 +7,7 @@ import {
   ChevronRight,
   FileCheck,
   ShieldCheck,
-  BrainCircuit,
+  Zap,
   Library,
   BarChart3,
   HardDrive,
@@ -63,10 +63,10 @@ const MENU_ITEMS: MenuItem[] = [
   { 
     id: 'audit_skills', 
     label: '智能审计模型库', 
-    icon: <BrainCircuit size={18} />,
+    icon: <Zap size={18} />,
     children: [
       { id: 'cat_mgmt', label: '模型分类管理' },
-      { id: 'rule_mgmt', label: '审计规则管理' },
+      { id: 'rule_mgmt', label: '审查点管理' },
       { id: 'skill_mgmt', label: '审计模型管理' }
     ]
   },
@@ -154,7 +154,9 @@ export default function Sidebar({ activeView, onViewChange, isCollapsed, onToggl
                 }}
                 className={cn(
                   "flex items-center px-4 py-3 rounded-xl cursor-pointer transition-all text-sm font-medium group",
-                  activeView === item.id ? "bg-white text-blue-600 shadow-sm border border-blue-50" : "hover:bg-white/60",
+                  activeView === item.id 
+                    ? "bg-white/40 backdrop-blur-md text-blue-600 shadow-[0_4px_12px_-2px_rgba(59,130,246,0.12)] border border-white/50" 
+                    : "hover:bg-white/60",
                   isCollapsed && "justify-center px-0"
                 )}
                 title={isCollapsed ? item.label : ""}

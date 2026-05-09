@@ -14,16 +14,27 @@ import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { MOCK_SAVED_DOCUMENTS, SavedDocument } from '@/src/data/mockDocuments';
 import Markdown from 'react-markdown';
+import Pagination from './Pagination';
 
 export default function MyDocuments() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [documents, setDocuments] = React.useState<SavedDocument[]>(MOCK_SAVED_DOCUMENTS);
   const [previewDoc, setPreviewDoc] = React.useState<SavedDocument | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
 
   const filteredDocs = documents.filter(doc => 
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Reset to first page when searching
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.ceil(filteredDocs.length / pageSize);
+  const paginatedDocs = filteredDocs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -66,14 +77,14 @@ export default function MyDocuments() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">文书名称</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">类型</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">创建时间</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">操作</th>
+                <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">文书名称</th>
+                <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">类型</th>
+                <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider">创建时间</th>
+                <th className="px-6 py-4 text-xs font-normal text-gray-500 uppercase tracking-wider text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredDocs.map((doc) => (
+              {paginatedDocs.map((doc) => (
                 <tr 
                   key={doc.id} 
                   className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
@@ -84,7 +95,7 @@ export default function MyDocuments() {
                       <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                         <FileText size={16} />
                       </div>
-                      <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600">{doc.name}</span>
+                      <span className="text-sm font-normal text-gray-900 group-hover:text-blue-600">{doc.name}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -113,6 +124,14 @@ export default function MyDocuments() {
               ))}
             </tbody>
           </table>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredDocs.length}
+            pageSize={pageSize}
+          />
 
           {/* Empty State */}
           {filteredDocs.length === 0 && (

@@ -32,12 +32,15 @@ import {
   FileCheck,
   FileUp,
   Zap,
-  Paperclip
+  Paperclip,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { LawDocument, LawClause, LawQA, QAMessage } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
+import Pagination from './Pagination';
 
 const CATEGORIES = [
   '财政审计', '企业审计', '金融审计', '资源环境审计', '涉外审计', '经济责任审计', '其他'
@@ -81,6 +84,43 @@ const MOCK_LAWS: LawDocument[] = [
   }
 ];
 
+const MOCK_AUDIT_DOCS: LawDocument[] = [
+  {
+    id: 'audit-doc-1',
+    title: '2025年度办公大楼扩建工程施工合同.pdf',
+    department: '基建工程部',
+    publishDate: '2025-01-15',
+    effectiveDate: '2025-01-15',
+    category: '企业审计',
+    description: '办公楼扩建工程施工合同，包含付款条款与违约责任。',
+    content: '合同正文：\n一、工程范围：主要包括主体建筑建设、内部装修及弱电系统安装。\n二、进度款支付：甲方按每月完成工程量的80%向乙方支付进度款，剩余20%作为质保金。\n三、违约责任：若乙方未能按期完工，每逾期一日应向甲方支付工程总价0.05%的违约金。',
+    clauses: [
+      { id: 'ac1', title: '进度款条款', content: '支付比例约定' },
+      { id: 'ac2', title: '违约条款', content: '延期赔偿标准' }
+    ],
+    creator: '系统管理员',
+    createdAt: Date.now() - 86400000 * 5,
+    updatedAt: Date.now() - 86400000 * 1
+  },
+  {
+    id: 'audit-doc-2',
+    title: '第一季度差旅及办公耗材报销发票合辑.pdf',
+    department: '财务部',
+    publishDate: '2025-03-31',
+    effectiveDate: '2025-03-31',
+    category: '财务审计',
+    description: '包含多项差旅费用原始凭证与办公用品采购清单。',
+    content: '审计凭证摘要：\n1. 增值税专用发票：代码011002300xxx，金额2,450.00元，用途：办公复印纸采购。\n2. 差旅费报销单：XXX于2025年2月前往北京审计现场，住宿费1,200.00元，交通费800.00元。\n3. 招标公告：关于2025年度信息化设备采购的招标说明书，预算总额500万元。',
+    clauses: [
+      { id: 'ac3', title: '发票原件', content: '合规性检查点' },
+      { id: 'ac4', title: '招标说明', content: '等额对比校验' }
+    ],
+    creator: '系统管理员',
+    createdAt: Date.now() - 86400000 * 2,
+    updatedAt: Date.now()
+  }
+];
+
 interface LawKnowledgeBaseProps {
   readOnly?: boolean;
   title?: string;
@@ -88,9 +128,12 @@ interface LawKnowledgeBaseProps {
 }
 
 export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }: LawKnowledgeBaseProps) {
+  const isAudit = propTitle?.includes('审计');
   const [view, setView] = React.useState<'list' | 'detail' | 'qa' | 'chunks'>('list');
-  const [laws, setLaws] = React.useState<LawDocument[]>(MOCK_LAWS);
+  const [laws, setLaws] = React.useState<LawDocument[]>(isAudit ? MOCK_AUDIT_DOCS : MOCK_LAWS);
   const [selectedLaw, setSelectedLaw] = React.useState<LawDocument | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
   const [search, setSearch] = React.useState({ title: '', department: '', date: '' });
   const [editingLaw, setEditingLaw] = React.useState<LawDocument | null>(null);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
@@ -106,14 +149,27 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
     }
   ]);
 
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
+  const [showUploadCategoryDropdown, setShowUploadCategoryDropdown] = React.useState(false);
+
   // View Chunks state
   const [viewingLawChunks, setViewingLawChunks] = React.useState<LawDocument | null>(null);
+
+  const [activeDropdownId, setActiveDropdownId] = React.useState<string | null>(null);
 
   const filteredLaws = laws.filter(law => {
     return law.title.includes(search.title) && 
            law.department.includes(search.department) &&
            (search.date === '' || law.publishDate.includes(search.date));
   });
+
+  // Reset to first page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const totalPages = Math.ceil(filteredLaws.length / pageSize);
+  const paginatedLaws = filteredLaws.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleAdd = () => {
     setUploadedFiles([]);
@@ -134,6 +190,15 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
       setLaws(laws.filter(l => l.id !== id));
     }
   };
+
+  const [newLawData, setNewLawData] = React.useState<Partial<LawDocument>>({
+    title: '',
+    department: '',
+    category: CATEGORIES[0],
+    publishDate: '',
+    effectiveDate: '',
+    description: '',
+  });
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) return;
@@ -171,44 +236,46 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
       {/* Header */}
-      <div className="px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0 flex items-center justify-between">
+      <div className="px-6 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {onBack && (
             <button 
               onClick={onBack}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all active:scale-90 mr-2"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all active:scale-90"
             >
               <ChevronRight className="rotate-180" size={20} />
             </button>
           )}
           <div>
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight">{propTitle || '法律法规知识库'}</h2>
+            <h2 className="text-xl font-normal text-gray-900 tracking-tight">{propTitle || '法律法规知识库'}</h2>
             <p className="text-sm text-gray-500 mt-0.5 whitespace-nowrap">{propTitle ? `正在浏览 ${propTitle} 下的文档库` : '集中管理审计相关法律法规，支撑智能问答与合规查询'}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 mr-2">
-            <div className="relative w-40">
+            <div className="relative w-48">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="text"
                 value={search.title}
                 onChange={(e) => setSearch({ ...search, title: e.target.value })}
-                placeholder="法规名称..."
+                placeholder={isAudit ? "审计资料名称" : "法规名称..."}
                 className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-medium"
               />
             </div>
-            <div className="relative w-32">
-              <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input 
-                type="text"
-                value={search.department}
-                onChange={(e) => setSearch({ ...search, department: e.target.value })}
-                placeholder="发布部门..."
-                className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-medium"
-              />
-            </div>
+            {!isAudit && (
+              <div className="relative w-32">
+                <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text"
+                  value={search.department}
+                  onChange={(e) => setSearch({ ...search, department: e.target.value })}
+                  placeholder="发布部门..."
+                  className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-medium"
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {selectedIds.length > 0 && (
@@ -249,7 +316,7 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-7xl mx-auto flex flex-col">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white relative z-10 transition-all">
             <div className="flex items-center gap-3">
-              <h3 className="text-base font-normal text-lg tracking-tight text-gray-900">法律法规列表</h3>
+              <h3 className="text-base font-normal text-lg tracking-tight text-gray-900">{isAudit ? '审计资料列表' : '法律法规列表'}</h3>
               {selectedIds.length > 0 && (
                 <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded">
                   已选 {selectedIds.length} 项
@@ -260,7 +327,7 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50/50">
+                <tr className="border-b border-gray-100 text-[11px] font-normal text-gray-400 uppercase tracking-widest bg-gray-50/50">
                   <th className="px-6 py-3 w-10">
                     <input 
                       type="checkbox" 
@@ -272,15 +339,21 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-4 py-3 font-bold">法规名称</th>
-                  <th className="px-4 py-3 font-bold">发布部门</th>
-                  <th className="px-4 py-3 font-bold">发布日期</th>
-                  <th className="px-4 py-3 font-bold">生效日期</th>
-                  <th className="px-6 py-3 text-right font-bold">操作</th>
+                  <th className="px-4 py-3 font-normal">{isAudit ? '审计资料名称' : '法规名称'}</th>
+                  {isAudit ? (
+                    <th className="px-4 py-3 font-normal">上传时间</th>
+                  ) : (
+                    <>
+                      <th className="px-4 py-3 font-normal">发布部门</th>
+                      <th className="px-4 py-3 font-normal">发布日期</th>
+                      <th className="px-4 py-3 font-normal">生效日期</th>
+                    </>
+                  )}
+                  <th className="px-6 py-3 text-right font-normal">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredLaws.length > 0 ? filteredLaws.map((law) => (
+                {paginatedLaws.length > 0 ? paginatedLaws.map((law) => (
                   <tr key={law.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <input 
@@ -293,7 +366,7 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                     <td className="px-4 py-4">
                       <button 
                         onClick={() => { setSelectedLaw(law); setView('detail'); }}
-                        className="text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors text-left"
+                        className="text-sm font-normal text-gray-900 hover:text-blue-600 transition-colors text-left"
                       >
                         {law.title}
                       </button>
@@ -302,55 +375,103 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                         <span className="line-clamp-1 font-medium">{law.description}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-xs text-gray-600 font-bold">{law.department}</td>
-                    <td className="px-4 py-4 text-xs text-gray-500 font-bold">{law.publishDate}</td>
-                    <td className="px-4 py-4 text-xs text-gray-500 font-bold">{law.effectiveDate}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1 transition-all focus-within:opacity-100">
+                    {isAudit ? (
+                      <td className="px-4 py-4 text-xs text-gray-500 font-medium">
+                        {new Date(law.createdAt).toLocaleString('zh-CN', { 
+                          year: 'numeric', 
+                          month: '2-digit', 
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
+                    ) : (
+                      <>
+                        <td className="px-4 py-4 text-xs text-gray-600 font-bold">{law.department}</td>
+                        <td className="px-4 py-4 text-xs text-gray-500 font-bold">{law.publishDate}</td>
+                        <td className="px-4 py-4 text-xs text-gray-500 font-bold">{law.effectiveDate}</td>
+                      </>
+                    )}
+                    <td className="px-6 py-4 text-right overflow-visible">
+                      <div className="flex items-center justify-end gap-1">
                         <button 
                           onClick={() => { setViewingLawChunks(law); setView('chunks'); }}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all font-bold"
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all"
                           title="查看切片详情"
                         >
                           <Layers size={16} />
                         </button>
                         {!readOnly && (
-                          <>
-                            <button 
-                              onClick={() => setEditingLaw(law)}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all"
-                              title="编辑"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(law.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all"
-                              title="删除"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </>
-                        )}
-                        <div className="relative group/popover inline-block">
-                          <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all" title="下载">
-                            <Download size={16} />
+                          <button 
+                            onClick={() => setEditingLaw(law)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all"
+                            title="编辑"
+                          >
+                            <Edit2 size={16} />
                           </button>
-                          <div className="absolute right-0 bottom-full mb-2 w-36 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover/popover:opacity-100 group-hover/popover:visible pt-2 pb-2 z-20 transition-all">
-                            <button onClick={() => handleDownload(law, 'original')} className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
-                              <Download size={14} /> 原格式下载
-                            </button>
-                            <button onClick={() => handleDownload(law, 'text')} className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
-                              <FileCode size={14} /> Markdown下载
-                            </button>
-                          </div>
+                        )}
+                        <div className="relative inline-block">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownId(activeDropdownId === law.id ? null : law.id);
+                            }}
+                            className={cn(
+                              "p-2 text-gray-400 hover:text-gray-900 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all",
+                              activeDropdownId === law.id && "bg-gray-100 text-gray-900 border-gray-200"
+                            )} 
+                            title="更多操作"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          
+                          <AnimatePresence>
+                            {activeDropdownId === law.id && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-20" 
+                                  onClick={() => setActiveDropdownId(null)}
+                                />
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 z-30"
+                                >
+                                  <button 
+                                    onClick={() => { handleDownload(law, 'original'); setActiveDropdownId(null); }} 
+                                    className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Download size={14} /> 下载源格式
+                                  </button>
+                                  <button 
+                                    onClick={() => { handleDownload(law, 'text'); setActiveDropdownId(null); }} 
+                                    className="w-full px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <FileDown size={14} /> 下载markdown
+                                  </button>
+                                  {!readOnly && (
+                                    <>
+                                      <div className="h-px bg-gray-100 my-1.5" />
+                                      <button 
+                                        onClick={() => { handleDelete(law.id); setActiveDropdownId(null); }} 
+                                        className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2"
+                                      >
+                                        <Trash2 size={14} /> 删除资料
+                                      </button>
+                                    </>
+                                  )}
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={6} className="py-24 text-center">
+                    <td colSpan={isAudit ? 3 : 6} className="py-24 text-center">
                       <div className="flex flex-col items-center">
                         <BookOpen size={48} className="text-gray-100 mb-4" strokeWidth={1} />
                         <p className="text-sm text-gray-400 font-black tracking-widest uppercase">No laws found matching your search</p>
@@ -361,22 +482,13 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-gray-50/30 border-t border-gray-100 flex items-center justify-between font-bold">
-             <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest text-[#475569]">
-                展示本页 {filteredLaws.length} 条 · 总数据量 {laws.length} 条
-             </p>
-             <div className="flex items-center gap-2">
-                <button disabled className="p-1.5 hover:bg-white rounded-lg text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-transparent hover:border-gray-100 shadow-sm">
-                  <ChevronLeft size={16} />
-                </button>
-                <div className="flex items-center gap-1">
-                  <button className="w-8 h-8 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-lg shadow-blue-100 transition-all">1</button>
-                </div>
-                <button disabled className="p-1.5 hover:bg-white rounded-lg text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-transparent hover:border-gray-100 shadow-sm">
-                  <ChevronRight size={16} />
-                </button>
-             </div>
-          </div>
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredLaws.length}
+            pageSize={pageSize}
+          />
         </div>
       </div>
 
@@ -385,6 +497,7 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
         {editingLaw && (
           <LawEditor 
             law={editingLaw} 
+            isAudit={isAudit}
             onClose={() => setEditingLaw(null)} 
             onSave={handleSave} 
           />
@@ -406,7 +519,7 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                     <Upload size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-normal tracking-tight text-gray-900">上传法规文档</h3>
+                    <h3 className="text-lg font-normal tracking-tight text-gray-900">{isAudit ? "上传审计资料" : "上传法规文档"}</h3>
                     <p className="text-[11px] text-gray-400 font-medium font-bold mt-0.5 uppercase tracking-wider">支持 docx, pdf, wps 等主流格式</p>
                   </div>
                 </div>
@@ -415,14 +528,98 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                 </button>
               </div>
 
-              <div className="p-8 overflow-y-auto space-y-10 flex-1">
-                {/* Section 1: 上传文件 */}
+              <div className="p-8 overflow-y-auto space-y-8 flex-1">
+                {/* Section 1: 基本信息 */}
+                {!isAudit && (
+                  <div className="space-y-6">
+                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                      <Info size={16} className="text-blue-500" />
+                      <span>基本信息</span>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2 space-y-2">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">法规名称</label>
+                        <input 
+                          type="text"
+                          value={newLawData.title}
+                          onChange={(e) => setNewLawData({ ...newLawData, title: e.target.value })}
+                          className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                          placeholder="请输入法律法规名称"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">发布部门</label>
+                        <input 
+                          type="text"
+                          value={newLawData.department}
+                          onChange={(e) => setNewLawData({ ...newLawData, department: e.target.value })}
+                          className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                          placeholder="发布部门"
+                        />
+                      </div>
+                      <div className="space-y-2 relative">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">所属分类</label>
+                        <button 
+                          onClick={() => setShowUploadCategoryDropdown(!showUploadCategoryDropdown)}
+                          className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm flex items-center justify-between text-gray-700"
+                        >
+                          <span>{newLawData.category}</span>
+                          <ChevronDown size={14} className={cn("text-gray-400 transition-transform", showUploadCategoryDropdown && "rotate-180")} />
+                        </button>
+                        <AnimatePresence>
+                          {showUploadCategoryDropdown && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 5 }}
+                              className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 overflow-hidden"
+                            >
+                              {CATEGORIES.map(c => (
+                                <div 
+                                  key={c}
+                                  onClick={() => { setNewLawData({ ...newLawData, category: c }); setShowUploadCategoryDropdown(false); }}
+                                  className={cn(
+                                    "px-4 py-2.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all flex items-center justify-between",
+                                    newLawData.category === c ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"
+                                  )}
+                                >
+                                  <span>{c}</span>
+                                  {newLawData.category === c && <Check size={14} />}
+                                </div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">发布日期</label>
+                        <input 
+                          type="date"
+                          value={newLawData.publishDate}
+                          onChange={(e) => setNewLawData({ ...newLawData, publishDate: e.target.value })}
+                          className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">生效日期</label>
+                        <input 
+                          type="date"
+                          value={newLawData.effectiveDate}
+                          onChange={(e) => setNewLawData({ ...newLawData, effectiveDate: e.target.value })}
+                          className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section 2: 上传文件 */}
                 <div className="space-y-6">
                   <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">
                     <span>上传文件</span>
-                    <span className="text-xs font-normal text-gray-400 ml-2">(非必填)</span>
                   </h4>
-                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-white group hover:border-blue-400 focus-within:border-blue-400 transition-all cursor-pointer shadow-sm">
+                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-white group hover:border-blue-400 focus-within:border-blue-400 transition-all cursor-pointer shadow-sm relative">
+                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
                      <div className="w-12 h-12 bg-gray-50 group-hover:bg-blue-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:text-blue-600 transition-colors">
                         <Upload size={24} />
                      </div>
@@ -433,11 +630,10 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                   </div>
                 </div>
 
-                {/* Section 2: 分片配置 */}
+                {/* Section 3: 分片配置 */}
                 <div className="space-y-6">
                   <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">
                      <span>切分参数设置</span>
-                     <span className="text-xs font-normal text-gray-400 ml-2">(非必填)</span>
                   </h4>
                   
                   <div className="space-y-4">
@@ -593,12 +789,49 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                  </button>
                  <button 
                    onClick={() => {
-                     alert('正在处理分片并添加到法律法规知识库...');
+                     // Metadata check only if not in audit mode
+                     if (!isAudit && !newLawData.title) {
+                       alert('法规名称为必填项');
+                       return;
+                     }
+                     
+                     // In audit mode, ensure file is uploaded
+                     if (isAudit && uploadedFiles.length === 0) {
+                       alert('请先选择要上传的文件');
+                       return;
+                     }
+                     
+                     const lawToSave: LawDocument = {
+                       id: 'law-' + Date.now(),
+                       title: isAudit ? (uploadedFiles[0]?.name || '未命名审计资料') : (newLawData.title || ''),
+                       department: newLawData.department || (isAudit ? '审计部' : ''),
+                       category: newLawData.category || CATEGORIES[0],
+                       publishDate: newLawData.publishDate || (isAudit ? new Date().toISOString().split('T')[0] : ''),
+                       effectiveDate: newLawData.effectiveDate || (isAudit ? new Date().toISOString().split('T')[0] : ''),
+                       description: newLawData.description || '',
+                       content: '内容上传成功',
+                       clauses: [],
+                       creator: '系统管理员',
+                       createdAt: Date.now(),
+                       updatedAt: Date.now()
+                     };
+                     
+                     setLaws([...laws, lawToSave]);
                      setShowUploadModal(false);
+                     setNewLawData({
+                       title: '',
+                       department: '',
+                       category: CATEGORIES[0],
+                       publishDate: '',
+                       effectiveDate: '',
+                       description: '',
+                     });
+                     alert('资料已成功录入并添加至库');
                    }}
                    className="px-8 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
                  >
-                   确认创建并处理分片
+                   <Save size={18} />
+                   <span>确认提交</span>
                  </button>
               </div>
             </motion.div>
@@ -612,14 +845,14 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
 function LawDetail({ law, onBack, onStartQA }: { law: LawDocument; onBack: () => void; onStartQA: () => void }) {
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
-      <div className="px-8 py-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">{law.title}</h3>
-            <div className="flex items-center gap-3 text-[10px] text-gray-400 mt-0.5">
+            <h3 className="text-lg font-normal tracking-tight text-gray-900">{law.title}</h3>
+            <div className="flex items-center gap-3 text-[10px] text-gray-400 mt-0.5 font-normal">
               <span>发布部门: {law.department}</span>
               <span>•</span>
               <span>发布日期: {law.publishDate}</span>
@@ -629,25 +862,14 @@ function LawDetail({ law, onBack, onStartQA }: { law: LawDocument; onBack: () =>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">
-            <Download size={16} />
-            <span>下载文档</span>
-          </button>
-          <button 
-            onClick={onStartQA}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
-          >
-            <MessageSquare size={18} />
-            <span className="font-medium">开始对话</span>
-          </button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Content */}
-        <div className="flex-1 overflow-y-auto p-12 bg-gray-50/30">
+        <div className="flex-1 overflow-y-auto p-12 bg-gray-50/30 border-r border-gray-100">
           <div className="max-w-3xl mx-auto bg-white p-12 rounded-3xl shadow-sm border border-gray-100 min-h-full">
-            <h1 className="text-3xl font-normal text-2xl tracking-tight text-gray-900 text-center mb-12">{law.title}</h1>
+            <h1 className="text-3xl font-normal tracking-tight text-gray-900 text-center mb-12">{law.title}</h1>
             <div className="prose prose-blue max-w-none font-serif text-lg leading-relaxed text-gray-800 whitespace-pre-wrap">
               {law.content}
             </div>
@@ -655,7 +877,7 @@ function LawDetail({ law, onBack, onStartQA }: { law: LawDocument; onBack: () =>
         </div>
 
         {/* Right: Clauses */}
-        <div className="w-80 border-l border-gray-100 bg-white overflow-y-auto p-6">
+        <div className="w-80 bg-white overflow-y-auto p-6">
           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <Layers size={14} className="text-blue-600" />
             条款标注
@@ -710,14 +932,14 @@ function LawQAInterface({ law, onBack }: { law: LawDocument | null; onBack: () =
 
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
-      <div className="px-8 py-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">法规智能问答</h3>
-            <p className="text-xs text-gray-500 mt-0.5">当前依据: 《{law?.title}》</p>
+            <h3 className="text-lg font-normal tracking-tight text-gray-900">法规智能问答</h3>
+            <p className="text-xs text-gray-500 mt-0.5 font-normal">当前依据: 《{law?.title}》</p>
           </div>
         </div>
         <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all">
@@ -820,32 +1042,9 @@ function LawQAInterface({ law, onBack }: { law: LawDocument | null; onBack: () =
   );
 }
 
-function LawEditor({ law, onClose, onSave }: { law: LawDocument; onClose: () => void; onSave: (l: LawDocument) => void }) {
+function LawEditor({ law, isAudit, onClose, onSave }: { law: LawDocument; isAudit?: boolean; onClose: () => void; onSave: (l: LawDocument) => void }) {
   const [formData, setFormData] = React.useState<LawDocument>({ ...law });
-  const [activeTab, setActiveTab] = React.useState<'form' | 'upload' | 'preview'>('form');
-  const [isParsing, setIsParsing] = React.useState(false);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsParsing(true);
-    // Mock Parsing
-    setTimeout(() => {
-      setFormData({
-        ...formData,
-        title: file.name.split('.')[0],
-        content: '解析后的法律法规全文内容示例...\n第一条 立法目的...\n第二条 适用范围...',
-        markdownContent: '# ' + file.name.split('.')[0] + '\n\n## 第一条 立法目的\n\n解析后的 Markdown 内容...',
-        clauses: [
-          { id: 'c1', title: '第一条', content: '立法目的' },
-          { id: 'c2', title: '第二条', content: '适用范围' }
-        ]
-      });
-      setIsParsing(false);
-      setActiveTab('preview');
-    }, 2000);
-  };
+  const [showEditorCategoryDropdown, setShowEditorCategoryDropdown] = React.useState(false);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -865,87 +1064,81 @@ function LawEditor({ law, onClose, onSave }: { law: LawDocument; onClose: () => 
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="text-lg font-normal text-gray-900 tracking-tight">{law.id ? '编辑法律法规' : '新增法律法规'}</h3>
-            <p className="text-xs text-gray-500 mt-1">支持手动录入或文档解析，自动构建 AI 知识库</p>
+            <h3 className="text-lg font-normal text-gray-900 tracking-tight">{law.id ? '编辑资料' : '新增资料'}</h3>
+            <p className="text-xs text-gray-500 mt-1">{isAudit ? '编辑资料基本信息' : '手动录入法律法规基本信息'}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="px-8 border-b border-gray-100 shrink-0">
-          <div className="flex items-center gap-6">
-            {[
-              { id: 'form', label: '基本信息' },
-              { id: 'upload', label: '文档解析' },
-              { id: 'preview', label: '解析预览' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={cn(
-                  "py-4 text-sm font-medium transition-all relative",
-                  activeTab === tab.id ? "text-blue-600" : "text-gray-500 hover:text-gray-900"
-                )}
-              >
-                {tab.label}
-                {activeTab === tab.id && (
-                  <motion.div layoutId="activeLawTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
-          <AnimatePresence mode="wait">
-            {activeTab === 'form' && (
-              <motion.div 
-                key="form"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="grid grid-cols-2 gap-6"
-              >
-                <div className="col-span-2 space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">法规名称 <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="请输入完整的法律法规名称"
-                  />
-                </div>
+        <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="col-span-2 space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">{isAudit ? '文件名' : '法规名称'} <span className="text-red-500">*</span></label>
+              <input 
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                placeholder={isAudit ? "请输入文件名" : "请输入完整的法律法规名称"}
+              />
+            </div>
+            
+            {!isAudit && (
+              <>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">发布部门 <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">发布部门</label>
                   <input 
                     type="text"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                     placeholder="如：财政部"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">所属分类</label>
-                  <select 
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                <div className="space-y-2 relative">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">所属分类</label>
+                  <button 
+                    onClick={() => setShowEditorCategoryDropdown(!showEditorCategoryDropdown)}
+                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm flex items-center justify-between text-gray-700"
                   >
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <span>{formData.category}</span>
+                    <ChevronDown size={14} className={cn("text-gray-400 transition-transform", showEditorCategoryDropdown && "rotate-180")} />
+                  </button>
+                  <AnimatePresence>
+                    {showEditorCategoryDropdown && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 overflow-hidden"
+                      >
+                        {CATEGORIES.map(c => (
+                          <div 
+                            key={c}
+                            onClick={() => { setFormData({ ...formData, category: c }); setShowEditorCategoryDropdown(false); }}
+                            className={cn(
+                              "px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-between",
+                              formData.category === c ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"
+                            )}
+                          >
+                            <span>{c}</span>
+                            {formData.category === c && <Check size={14} />}
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">发布日期 <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">发布日期</label>
                   <input 
                     type="date"
                     value={formData.publishDate}
                     onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
-                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -954,7 +1147,7 @@ function LawEditor({ law, onClose, onSave }: { law: LawDocument; onClose: () => 
                     type="date"
                     value={formData.effectiveDate}
                     onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                   />
                 </div>
                 <div className="col-span-2 space-y-2">
@@ -962,66 +1155,15 @@ function LawEditor({ law, onClose, onSave }: { law: LawDocument; onClose: () => 
                   <textarea 
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all h-24 resize-none"
+                    className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all h-20 resize-none shadow-sm"
                     placeholder="请输入法规的简要描述或立法目的..."
                   />
                 </div>
-              </motion.div>
+              </>
             )}
-
-            {activeTab === 'upload' && (
-              <motion.div 
-                key="upload"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="h-full flex flex-col items-center justify-center py-12"
-              >
-                <div className="w-full max-w-md border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all group relative">
-                  <input 
-                    type="file" 
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    {isParsing ? <Loader2 size={40} className="animate-spin" /> : <FileUp size={40} />}
-                  </div>
-                  <h4 className="text-lg font-bold text-gray-900 mb-2">
-                    {isParsing ? '正在智能解析文档...' : '上传法规文档'}
-                  </h4>
-                  <p className="text-sm text-gray-500 leading-relaxed">
-                    {isParsing ? '系统正在提取条款、发布部门及日期等关键信息' : '支持 doc, docx, pdf, wps 等格式，解析后自动填充表单'}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'preview' && (
-              <motion.div 
-                key="preview"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="space-y-6"
-              >
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
-                  <Info size={18} className="text-blue-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-700 leading-relaxed">
-                    以下为 AI 解析结果预览，您可以手动修正解析错误。内容将作为 AI 问答的推理依据。
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">全文内容 (Markdown)</label>
-                  <textarea 
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    className="w-full bg-white border border-gray-200 rounded-xl p-6 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all h-96 resize-none"
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </div>
         </div>
+
 
         {/* Footer */}
         <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
@@ -1033,8 +1175,8 @@ function LawEditor({ law, onClose, onSave }: { law: LawDocument; onClose: () => 
           </button>
           <button 
             onClick={() => {
-              if (!formData.title || !formData.department || !formData.publishDate) {
-                alert('名称、发布部门、发布日期为必填项');
+              if (!formData.title) {
+                alert('名称为必填项');
                 return;
               }
               onSave({ ...formData, updatedAt: Date.now() });
@@ -1057,6 +1199,13 @@ const MOCK_LAW_CHUNKS: Record<string, any[]> = {
   ],
   'law2': [
     { id: 'l2-c0', docId: 'law2', docName: '中华人民共和国审计法', index: 0, content: '第一条 审计法立法目的：加强国家审计监督，维护财政经济秩序。', metadata: { type: 'law' } }
+  ],
+  'audit-doc-1': [
+    { id: 'ad1-c0', docId: 'audit-doc-1', docName: '2025年度办公大楼扩建工程施工合同.pdf', index: 0, content: '合同正文：一、工程范围：主要包括主体建筑建设、内部装修及弱电系统安装。', metadata: { type: 'audit' } },
+    { id: 'ad1-c1', docId: 'audit-doc-1', docName: '2025年度办公大楼扩建工程施工合同.pdf', index: 1, content: '二、进度款支付：甲方按每月完成工程量的80%向乙方支付进度款，剩余20%作为质保金。', metadata: { type: 'audit' } }
+  ],
+  'audit-doc-2': [
+    { id: 'ad2-c0', docId: 'audit-doc-2', docName: '第一季度差旅及办公耗材报销发票合辑.pdf', index: 0, content: '审计凭证摘要：1. 增值税专用发票：代码011002300xxx，金额2,450.00元。', metadata: { type: 'audit' } }
   ]
 };
 

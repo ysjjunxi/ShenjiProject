@@ -201,29 +201,29 @@ export default function DataSourceConfig({ dataSourceId, onBack }: DataSourceCon
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
-                          <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">源表名</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">源字段</th>
-                          <th className="px-6 py-3 text-[10px] font-bold border-l border-gray-100 text-blue-500 uppercase bg-blue-50/30">推荐标准实体</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-blue-500 uppercase bg-blue-50/30">推荐标准字段</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-center">AI 置信度</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-center">状态</th>
-                          <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-right">操作</th>
+                          <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase">源表名</th>
+                          <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase">源字段</th>
+                          <th className="px-6 py-3 text-[10px] font-normal border-l border-gray-100 text-blue-500 uppercase bg-blue-50/30">推荐标准实体</th>
+                          <th className="px-6 py-3 text-[10px] font-normal text-blue-500 uppercase bg-blue-50/30">推荐标准字段</th>
+                          <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase text-center">AI 置信度</th>
+                          <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase text-center">状态</th>
+                          <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase text-right">操作</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {/* Mock mapping rows */}
                         <tr className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-4 text-xs font-mono text-gray-600">audit_record</td>
-                          <td className="px-6 py-4 text-xs font-mono font-bold text-gray-800">project_id</td>
+                          <td className="px-6 py-4 text-xs font-mono text-gray-800">project_id</td>
                           <td className="px-6 py-4 bg-blue-50/10 border-l border-gray-100">
-                            <select className="w-full h-8 text-xs font-bold text-blue-700 bg-blue-50 rounded-lg px-2 border-none focus:ring-0">
+                            <select className="w-full h-8 text-xs font-normal text-blue-700 bg-blue-50 rounded-lg px-2 border-none focus:ring-0">
                               <option>项目</option>
                               <option>单位/部门</option>
                               <option>资金/补贴</option>
                             </select>
                           </td>
                           <td className="px-6 py-4 bg-blue-50/10">
-                            <select className="w-full h-8 text-xs font-bold text-blue-700 bg-blue-50 rounded-lg px-2 border-none focus:ring-0">
+                            <select className="w-full h-8 text-xs font-normal text-blue-700 bg-blue-50 rounded-lg px-2 border-none focus:ring-0">
                               <option>项目编号</option>
                               <option>项目名称</option>
                             </select>
@@ -243,7 +243,7 @@ export default function DataSourceConfig({ dataSourceId, onBack }: DataSourceCon
                         </tr>
                         <tr className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-4 text-xs font-mono text-gray-600">audit_record</td>
-                          <td className="px-6 py-4 text-xs font-mono font-bold text-gray-800">amount</td>
+                          <td className="px-6 py-4 text-xs font-mono text-gray-800">amount</td>
                           <td className="px-6 py-4 bg-blue-50/10 border-l border-gray-100">
                             <select className="w-full h-8 text-xs font-bold text-blue-700 bg-blue-50 rounded-lg px-2 border-none focus:ring-0">
                               <option>收支明细</option>
@@ -409,17 +409,17 @@ export default function DataSourceConfig({ dataSourceId, onBack }: DataSourceCon
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100">
-                              <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">源字段名</th>
-                              <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">数据类型</th>
-                              <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">中文含义</th>
-                              <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">备注描述</th>
+                              <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase">源字段名</th>
+                              <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase">数据类型</th>
+                              <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase">中文含义</th>
+                              <th className="px-6 py-3 text-[10px] font-normal text-gray-400 uppercase">备注描述</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-50">
                             {table.fields.map((field, fIdx) => (
                               <tr key={field.name} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="px-6 py-3 text-sm font-mono text-gray-600">{field.name}</td>
-                                <td className="px-6 py-3 text-xs text-blue-500 font-mono font-bold">{field.type}</td>
+                                <td className="px-6 py-3 text-xs text-blue-500 font-mono font-normal">{field.type}</td>
                                 <td className="px-6 py-3">
                                   <input 
                                     type="text"

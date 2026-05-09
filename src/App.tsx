@@ -24,7 +24,8 @@ import DataAnalysisMerged from './components/DataAnalysisMerged';
 import MyDocuments from './components/MyDocuments';
 import SystemOpsManagement from './components/SystemOpsManagement';
 import SystemPermissionManagement from './components/SystemPermissionManagement';
-import { SystemLLM, SystemOrg, SystemRole, SystemUser, SystemLog } from './components/SystemPlaceholders';
+import SystemLLMManagement from './components/SystemLLMManagement';
+import { SystemOrg, SystemRole, SystemUser, SystemLog } from './components/SystemPlaceholders';
 import { 
   Conversation, 
   Message, 
@@ -419,8 +420,8 @@ export default function App() {
           {activeView === 'data_analysis' && (
             <DataAnalysisMerged />
           )}
-
-          {activeView === 'sys_llm' && <SystemLLM />}
+ 
+          {activeView === 'sys_llm' && <SystemLLMManagement />}
           {activeView === 'sys_org' && <SystemOrg />}
           {activeView === 'sys_role' && <SystemRole />}
           {activeView === 'sys_user' && <SystemUser />}

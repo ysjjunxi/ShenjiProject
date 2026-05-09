@@ -339,9 +339,6 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
       <div className="w-[450px] flex flex-col bg-white border-r border-gray-200 relative">
         <div className="px-5 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-sm sticky top-0 z-20 h-[60px] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="text-blue-600">
-              <Bot size={22} strokeWidth={1.5} />
-            </div>
             <div>
               <h3 className="text-sm font-normal text-lg tracking-tight text-gray-900 line-height-tight">智能文书助手</h3>
               <p className="text-[10px] text-gray-400 font-medium tracking-wide uppercase">AI Writing Assistant</p>
@@ -504,7 +501,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
 
         {/* Input Area */}
         <div className="p-4 border-t border-gray-100 bg-white">
-          <div className="relative group bg-gray-50 border border-gray-100 rounded-3xl focus-within:bg-white focus-within:border-blue-500/30 focus-within:ring-4 focus-within:ring-blue-500/5 transition-all shadow-sm flex flex-col">
+          <div className="relative group bg-gray-50 border border-gray-100 rounded-3xl focus-within:bg-white focus-within:ring-0 transition-all shadow-sm flex flex-col">
             {/* Attachments Section Inside Box */}
             {(selectedTemplates.length > 0 || selectedKBDocs.length > 0 || selectedQuickTemplates.length > 0 || selectedProject) && (
               <div className="flex flex-wrap gap-2 p-3 pb-1 border-b border-gray-100/50 bg-gray-50/50">
@@ -575,7 +572,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                   <AnimatePresence>
                     {showProjectMenu && (
                       <motion.div 
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
                         className="absolute bottom-full mb-3 left-0 w-64 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col max-h-[300px]"
                       >
                         <div className="p-2 border-b border-gray-100 relative bg-gray-50/50">
@@ -625,7 +622,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                   <AnimatePresence>
                     {showTemplateMenu && (
                       <motion.div 
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
                         className="absolute bottom-full mb-3 left-0 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col max-h-[400px]"
                       >
                         <div className="p-2 border-b border-gray-100 bg-gray-50 flex flex-col gap-2">
@@ -720,7 +717,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                   <AnimatePresence>
                     {showReferenceMenu && (
                       <motion.div 
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
                         className="absolute bottom-full mb-3 left-0 w-56 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
                       >
                         <div 
@@ -773,7 +770,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                   onClick={() => handleSend()}
                   disabled={(!input.trim() && selectedTemplates.length === 0 && selectedKBDocs.length === 0 && selectedQuickTemplates.length === 0) || isGenerating}
                   className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg",
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg",
                     (input.trim() || selectedTemplates.length > 0 || selectedKBDocs.length > 0 || selectedQuickTemplates.length > 0) && !isGenerating 
                       ? "bg-blue-600 text-white shadow-blue-500/20 hover:scale-105" 
                       : "bg-gray-100 text-gray-400 shadow-none pointer-events-none"

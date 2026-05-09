@@ -144,24 +144,16 @@ export default function KnowledgeBaseHome({ category, title }: KnowledgeBaseHome
   const nextStep = () => {};
   const prevStep = () => {};
 
-  const isReadOnlyCategory = category === 'law' || category === 'audit';
-  const canModify = !isReadOnlyCategory || CURRENT_USER_ROLE === 'admin';
+  const isReadOnlyCategory = false;
+  const canModify = true;
 
   const handleDelete = (id: string) => {
-    if (!canModify) {
-      alert('权限不足：审计员不支持删除该类知识库。');
-      return;
-    }
     if (window.confirm('确定要删除该知识库吗？所有文档和配置将丢失。')) {
       setKbList(kbList.filter(kb => kb.id !== id));
     }
   };
 
   const handleRename = (id: string) => {
-    if (!canModify) {
-      alert('权限不足：审计员不支持编辑和自命名此知识库。');
-      return;
-    }
     const name = window.prompt('请输入新名称:');
     if (name) {
       setKbList(kbList.map(kb => kb.id === id ? { ...kb, name } : kb));
@@ -213,10 +205,10 @@ export default function KnowledgeBaseHome({ category, title }: KnowledgeBaseHome
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
       {/* Title Area */}
-      <div className="px-8 flex items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0">
+      <div className="px-6 flex items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">{title}</h2>
-          <p className="text-sm text-gray-500 mt-1">管理您的专业审计知识储备，提升AI作业精准度</p>
+          <p className="text-sm text-gray-500 mt-1 font-normal">管理您的专业审计知识储备，提升AI作业精准度</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -539,7 +531,7 @@ export default function KnowledgeBaseHome({ category, title }: KnowledgeBaseHome
                      className="px-8 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
                    >
                      <Database size={16} />
-                     确认创建并处理分片
+                     确认提交
                    </button>
                  </div>
               </div>

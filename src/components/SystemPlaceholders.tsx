@@ -1,16 +1,5 @@
 import React from 'react';
 
-export function SystemLLM() {
-  return (
-    <div className="flex-1 p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">LLM管理</h2>
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[400px]">
-        <span className="text-gray-400">大语言模型配置与API密钥管理</span>
-      </div>
-    </div>
-  );
-}
-
 export function SystemOrg() {
   return (
     <div className="flex-1 p-6">

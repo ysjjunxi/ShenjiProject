@@ -3,7 +3,6 @@ import {
   Plus, 
   RefreshCw, 
   ChevronRight,
-  Search,
   Trash2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
@@ -26,37 +25,20 @@ export default function HistoryPanel({
   onNew,
   onDelete
 }: HistoryPanelProps) {
-  const [search, setSearch] = React.useState('');
-
-  const filtered = conversations
-    .filter(c => c.title.toLowerCase().includes(search.toLowerCase()))
+  const filtered = [...conversations]
     .sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
-    <div className="w-64 h-full bg-[#f0f2f5] border-r border-[#d9d9d9] flex flex-col">
+    <div className="w-56 h-full bg-[#F5F7FA] border-r border-gray-100 flex flex-col">
       {/* New Conversation Button */}
       <div className="p-4">
         <button 
           onClick={onNew}
-          className="w-full h-10 bg-blue-600 text-white rounded flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+          className="w-full h-10 bg-white/50 text-gray-600 border border-gray-100 rounded-xl flex items-center justify-center gap-2 hover:bg-white hover:border-gray-200 transition-all active:scale-95 text-xs font-normal"
         >
-          <Plus size={16} />
-          <span className="font-medium text-sm">新建对话</span>
+          <Plus size={14} className="text-blue-500" />
+          <span>新建对话任务</span>
         </button>
-      </div>
-
-      {/* Search */}
-      <div className="px-4 mb-4">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input 
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索对话..."
-            className="w-full h-8 bg-white border border-[#d9d9d9] rounded pl-9 pr-3 text-xs focus:outline-none focus:border-blue-500 transition-all"
-          />
-        </div>
       </div>
 
       {/* History List */}

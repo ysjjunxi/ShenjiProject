@@ -18,6 +18,7 @@ import { cn } from '@/src/lib/utils';
 import { AuditProject, ProjectStatus } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_PROJECTS } from '../data/mockProjects';
+import Pagination from './Pagination';
 
 interface AuditProjectListProps {
   onSelectProject: (id: string) => void;
@@ -36,6 +37,8 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
   const [projects, setProjects] = React.useState<AuditProject[]>(MOCK_PROJECTS);
   const [editingProject, setEditingProject] = React.useState<AuditProject | null>(null);
   const [deletingProjectId, setDeletingProjectId] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 9;
   
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
   const [createMode, setCreateMode] = React.useState<'import' | 'custom'>('import');
@@ -54,6 +57,14 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.code.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Reset to first page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleSaveProject = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,26 +135,37 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
-          {filtered.map((project) => (
-            <ProjectCard 
-              key={project.id} 
-              project={project} 
-              onClick={() => onSelectProject(project.id)}
-              onEdit={() => setEditingProject(project)}
-              onDelete={() => setDeletingProjectId(project.id)}
-            />
-          ))}
-          
-          {filtered.length === 0 && (
-            <div className="col-span-full py-24 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText size={32} className="text-gray-300" />
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {paginated.map((project) => (
+              <ProjectCard 
+                key={project.id} 
+                project={project} 
+                onClick={() => onSelectProject(project.id)}
+                onEdit={() => setEditingProject(project)}
+                onDelete={() => setDeletingProjectId(project.id)}
+              />
+            ))}
+            
+            {filtered.length === 0 && (
+              <div className="col-span-full py-24 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText size={32} className="text-gray-300" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">未找到相关项目</h3>
+                <p className="text-gray-500 mt-1">请尝试更换搜索关键词</p>
               </div>
-              <h3 className="text-lg font-medium text-gray-900">未找到相关项目</h3>
-              <p className="text-gray-500 mt-1">请尝试更换搜索关键词</p>
-            </div>
-          )}
+            )}
+          </div>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+          />
         </div>
       </div>
 

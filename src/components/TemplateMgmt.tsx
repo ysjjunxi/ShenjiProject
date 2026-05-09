@@ -31,6 +31,7 @@ import { DocumentTemplate, TemplateField, TEMPLATE_TYPES, COMMON_TEMPLATE_TYPES 
 import { MOCK_TEMPLATES } from '@/src/data/mockTemplates';
 import { motion, AnimatePresence } from 'motion/react';
 import TemplateEditor from './TemplateEditor';
+import Pagination from './Pagination';
 
 const TYPE_CONFIG = {
   evidence: { label: '取证单模板', icon: <ClipboardList size={18} />, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -75,12 +76,22 @@ export default function TemplateMgmt() {
   const [showDeleteModal, setShowDeleteModal] = React.useState<string | null>(null);
   const [showDetailId, setShowDetailId] = React.useState<string | null>(null);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 9;
 
   const filteredTemplates = templates.filter(t => {
     const matchesTemplateType = templateTypeFilter === 'all' || t.templateType === templateTypeFilter;
     const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase());
     return matchesTemplateType && matchesSearch;
   });
+
+  // Reset to first page when filtering
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, templateTypeFilter]);
+
+  const totalPages = Math.ceil(filteredTemplates.length / pageSize);
+  const paginatedTemplates = filteredTemplates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleAddTemplate = () => {
     setEditingTemplate({
@@ -317,30 +328,40 @@ export default function TemplateMgmt() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
-          {filteredTemplates.map((tpl) => (
-            <TemplateCard 
-              key={tpl.id} 
-              template={tpl} 
-              isSelected={selectedIds.includes(tpl.id)}
-              onSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
-              onEdit={() => handleEditTemplate(tpl)}
-              onDelete={() => handleDelete(tpl.id)}
-              onView={() => setShowDetailId(tpl.id)}
-            />
-          ))}
-          
-          {filteredTemplates.length === 0 && (
-            <div className="col-span-full py-24 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText size={32} className="text-gray-300" />
+      <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 flex flex-col">
+        <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {paginatedTemplates.map((tpl) => (
+              <TemplateCard 
+                key={tpl.id} 
+                template={tpl} 
+                isSelected={selectedIds.includes(tpl.id)}
+                onSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
+                onEdit={() => handleEditTemplate(tpl)}
+                onDelete={() => handleDelete(tpl.id)}
+                onView={() => setShowDetailId(tpl.id)}
+              />
+            ))}
+            
+            {filteredTemplates.length === 0 && (
+              <div className="col-span-full py-24 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText size={32} className="text-gray-300" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">暂无该类型模板</h3>
+                <p className="text-gray-500 mt-1">您可以点击右上角按钮新增一个模板</p>
               </div>
-              <h3 className="text-lg font-medium text-gray-900">暂无该类型模板</h3>
-              <p className="text-gray-500 mt-1">您可以点击右上角按钮新增一个模板</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredTemplates.length}
+          pageSize={pageSize}
+        />
       </div>
 
       {/* Delete Modal */}
@@ -430,19 +451,19 @@ export default function TemplateMgmt() {
                         <table className="w-full border-collapse border border-gray-900 text-sm">
                           <tbody>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold w-[15%]">项目名称</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal w-[15%]">项目名称</td>
                               <td className="border border-gray-900 p-4" colSpan={3}></td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold">被审计（调查）<br/>单位或个人</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal">被审计（调查）<br/>单位或个人</td>
                               <td className="border border-gray-900 p-4" colSpan={3}></td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold">审计（调查）事项</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal">审计（调查）事项</td>
                               <td className="border border-gray-900 p-4" colSpan={3}></td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold w-[15%]">
+                              <td className="border border-gray-900 p-4 text-center font-normal w-[15%]">
                                 <div className="flex flex-col h-full justify-center gap-6">
                                   <span>审</span>
                                   <span>计</span>
@@ -466,7 +487,7 @@ export default function TemplateMgmt() {
                               <td className="border border-gray-900 p-4 w-[35%]">&nbsp;&nbsp;&nbsp;&nbsp; 年 &nbsp;&nbsp;&nbsp;&nbsp; 月 &nbsp;&nbsp;&nbsp;&nbsp; 日</td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold">
+                              <td className="border border-gray-900 p-4 text-center font-normal">
                                 <div className="flex flex-col h-full justify-center gap-4">
                                   <span>证 据</span>
                                   <span>提 供</span>
@@ -481,9 +502,9 @@ export default function TemplateMgmt() {
                               </td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold">证据提供单位负责人<br/>（签名）</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal">证据提供单位负责人<br/>（签名）</td>
                               <td className="border border-gray-900 p-4"></td>
-                              <td className="border border-gray-900 p-4 text-center font-bold">日期</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal">日期</td>
                               <td className="border border-gray-900 p-4">&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;日</td>
                             </tr>
                           </tbody>
@@ -511,23 +532,23 @@ export default function TemplateMgmt() {
                         <table className="w-full border-collapse border border-gray-900 text-sm">
                           <tbody>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold w-[15%]">项目名称</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal w-[15%]">项目名称</td>
                               <td className="border border-gray-900 p-4" colSpan={3}></td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold">审计（调查）<br/>事项</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal">审计（调查）<br/>事项</td>
                               <td className="border border-gray-900 p-4" colSpan={3}></td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold">审计人员</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal">审计人员</td>
                               <td className="border border-gray-900 p-4 w-[35%]"></td>
-                              <td className="border border-gray-900 p-4 text-center font-bold w-[15%]">编制日期</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal w-[15%]">编制日期</td>
                               <td className="border border-gray-900 p-4 w-[35%]">&nbsp;&nbsp;&nbsp;&nbsp; 年 &nbsp;&nbsp;&nbsp;&nbsp; 月 &nbsp;&nbsp;&nbsp;&nbsp; 日</td>
                             </tr>
                             <tr>
                               <td className="border border-gray-900 p-6 align-top" colSpan={4}>
                                 <div className="min-h-[250px]">
-                                  <div className="font-bold mb-4">审计过程：</div>
+                                  <div className="font-normal mb-4">审计过程：</div>
                                   <div className="text-gray-400 italic text-sm">
                                     （说明实施审计的步骤和方法、所取得的审计证据的名称和来源；多个底稿间共用审计证据、且证据附在其他底稿后的，需注明“其中，审计证据附在号底稿后”）
                                   </div>
@@ -537,7 +558,7 @@ export default function TemplateMgmt() {
                             <tr>
                               <td className="border border-gray-900 p-6 align-top" colSpan={4}>
                                 <div className="min-h-[300px]">
-                                  <div className="font-bold mb-4">审计认定的事实摘要及审计结论：</div>
+                                  <div className="font-normal mb-4">审计认定的事实摘要及审计结论：</div>
                                   <div className="text-gray-400 italic text-sm">
                                     （审计结论包括未发现问题的结论和已发现问题的结论；对已发现问题的结论，需说明得出结论所依据的规定和标准、法律法规具体条款）
                                   </div>
@@ -547,14 +568,14 @@ export default function TemplateMgmt() {
                             <tr>
                               <td className="border border-gray-900 p-6 align-top" colSpan={4}>
                                 <div className="min-h-[150px]">
-                                  <div className="font-bold mb-4">审核意见：</div>
+                                  <div className="font-normal mb-4">审核意见：</div>
                                 </div>
                               </td>
                             </tr>
                             <tr>
-                              <td className="border border-gray-900 p-4 text-center font-bold w-[15%]">审核人员</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal w-[15%]">审核人员</td>
                               <td className="border border-gray-900 p-4 w-[35%]"></td>
-                              <td className="border border-gray-900 p-4 text-center font-bold w-[15%]">审核日期</td>
+                              <td className="border border-gray-900 p-4 text-center font-normal w-[15%]">审核日期</td>
                               <td className="border border-gray-900 p-4 w-[35%]">&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;日</td>
                             </tr>
                           </tbody>

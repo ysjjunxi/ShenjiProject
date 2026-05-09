@@ -35,8 +35,13 @@ import {
   Evidence, 
   WorkingPaper, 
   AuditReport,
-  KNOWLEDGE_BASES
+  KNOWLEDGE_BASES,
+  AuditRule,
+  AuditRule as Rule,
+  RuleConfigurableCheckpoint,
+  LogicBlock
 } from '@/src/types';
+import { MOCK_RULES } from '@/src/constants';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
@@ -72,23 +77,23 @@ const MODEL_CATEGORIES = [
 
 const MOCK_MODELS = [
   // 财政收支审计类模型
-  { id: 'm411', name: '预算编制 / 执行合规性审计模型', categoryId: 'cat1', description: '审计预算编制是否科学、执行是否严格符合规定。' },
-  { id: 'm412', name: '三公经费合规性审计模型', categoryId: 'cat1', description: '审计因公出国、公务用车、公务接待经费支出。' },
-  { id: 'm413', name: '国库支付合规性审计模型', categoryId: 'cat1', description: '审计国库集中支付流程及资金去向。' },
-  { id: 'm414', name: '乡镇财政收支合规性审计模型', categoryId: 'cat1', description: '审计乡镇财政收支的真实性与合规性。' },
-  { id: 'm415', name: '非税收入合规性审计模型', categoryId: 'cat1', description: '审计非税收入征收管理情况。' },
-  { id: 'm416', name: '往来款项合规性审计模型', categoryId: 'cat1', description: '审计往来款项的真实性、合法性。' },
-  { id: 'm417', name: '财务核算合规性审计模型', categoryId: 'cat1', description: '审计会计核算是否符合财务准则。' },
-  { id: 'm418', name: '村级代管资金专项审计模型', categoryId: 'cat1', description: '审计村级代管资金的安全与合规使用。' },
-  { id: 'm419', name: '政府采购合规性专项审计模型', categoryId: 'cat1', description: '审计政府采购程序及合同执行情况。' },
-  { id: 'm4110', name: '财政直达资金专项审计模型', categoryId: 'cat1', description: '审计财政直达资金的分配、下达与使用。' },
-  { id: 'm4111', name: '财政存量资金专项审计模型', categoryId: 'cat1', description: '审计财政存量资金的清理与盘活情况。' },
-  { id: 'm4112', name: '零余额账户使用合规性审计模型', categoryId: 'cat1', description: '审计零余额账户资金支付的真实合规性。' },
+  { id: 'm411', name: '预算编制 / 执行合规性审计模型', categoryId: 'cat1', description: '审计预算编制是否科学、执行是否严格符合规定。', status: 'published' },
+  { id: 'm412', name: '三公经费合规性审计模型', categoryId: 'cat1', description: '审计因公出国、公务用车、公务接待经费支出。', status: 'published' },
+  { id: 'm413', name: '国库支付合规性审计模型', categoryId: 'cat1', description: '审计国库集中支付流程及资金去向。', status: 'published' },
+  { id: 'm414', name: '乡镇财政收支合规性审计模型', categoryId: 'cat1', description: '审计乡镇财政收支的真实性与合规性。', status: 'published' },
+  { id: 'm415', name: '非税收入合规性审计模型', categoryId: 'cat1', description: '审计非税收入征收管理情况。', status: 'published' },
+  { id: 'm416', name: '往来款项合规性审计模型', categoryId: 'cat1', description: '审计往来款项的真实性、合法性。', status: 'published' },
+  { id: 'm417', name: '财务核算合规性审计模型', categoryId: 'cat1', description: '审计会计核算是否符合财务准则。', status: 'draft' },
+  { id: 'm418', name: '村级代管资金专项审计模型', categoryId: 'cat1', description: '审计村级代管资金的安全与合规使用。', status: 'published' },
+  { id: 'm419', name: '政府采购合规性专项审计模型', categoryId: 'cat1', description: '审计政府采购程序及合同执行情况。', status: 'published' },
+  { id: 'm4110', name: '财政直达资金专项审计模型', categoryId: 'cat1', description: '审计财政直达资金的分配、下达与使用。', status: 'published' },
+  { id: 'm4111', name: '财政存量资金专项审计模型', categoryId: 'cat1', description: '审计财政存量资金的清理与盘活情况。', status: 'published' },
+  { id: 'm4112', name: '零余额账户使用合规性审计模型', categoryId: 'cat1', description: '审计零余额账户资金支付的真实合规性。', status: 'published' },
   
   // 重大政策贯彻执行审计模型
-  { id: 'm421', name: '乡村振兴政策执行审计模型', categoryId: 'cat2', description: '审计乡村振兴相关政策落实及资金使用效果。' },
-  { id: 'm422', name: '专项债券及国债资金管理审计模型', categoryId: 'cat2', description: '审计专项债资金投向及项目进展。' },
-  { id: 'm423', name: '中央预算内投资项目执行审计模型', categoryId: 'cat2', description: '审计中央预算内投资项目的建设与管理。' },
+  { id: 'm421', name: '乡村振兴政策执行审计模型', categoryId: 'cat2', description: '审计乡村振兴相关政策落实及资金使用效果。', status: 'published' },
+  { id: 'm422', name: '专项债券及国债资金管理审计模型', categoryId: 'cat2', description: '审计专项债资金投向及项目进展。', status: 'published' },
+  { id: 'm423', name: '中央预算内投资项目执行审计模型', categoryId: 'cat2', description: '审计中央预算内投资项目的建设与管理说明。', status: 'draft' },
   { id: 'm424', name: '惠农政策落实审计模型', categoryId: 'cat2', description: '审计各项惠农补贴政策的执行情况。' },
   { id: 'm425', name: '政策执行进度管控审计模型', categoryId: 'cat2', description: '审计重大政策执行的时间节点与进度。' },
   { id: 'm426', name: '政策佐证材料合规性审计模型', categoryId: 'cat2', description: '审计政策执行过程中的支撑材料真实性。' },
@@ -405,11 +410,11 @@ const PROJECT_DETAILS_MAP: Record<string, {
 <table class="w-full border-collapse border border-gray-800 text-sm !m-0">
   <tbody>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold w-1/5">项目名称</td>
+      <td class="border border-gray-800 p-3 text-center font-normal w-1/5">项目名称</td>
       <td class="border border-gray-800 p-3" colspan="3">xxx县财政预算审计</td>
     </tr>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold">审计（调查）<br/>事项</td>
+      <td class="border border-gray-800 p-3 text-center font-normal">审计（调查）<br/>事项</td>
       <td class="border border-gray-800 p-3" colspan="3">取证单汇总核查</td>
     </tr>
     <tr>
@@ -495,11 +500,11 @@ const PROJECT_DETAILS_MAP: Record<string, {
 <table class="w-full border-collapse border border-gray-800 text-sm !m-0">
   <tbody>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold w-1/5">项目名称</td>
+      <td class="border border-gray-800 p-3 text-center font-normal w-1/5">项目名称</td>
       <td class="border border-gray-800 p-3" colspan="3">xxx县财政预算审计</td>
     </tr>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold">审计（调查）<br/>事项</td>
+      <td class="border border-gray-800 p-3 text-center font-normal">审计（调查）<br/>事项</td>
       <td class="border border-gray-800 p-3" colspan="3">取证单汇总核查</td>
     </tr>
     <tr>
@@ -642,11 +647,11 @@ export default function AuditProjectDetail({ projectId, onBack, onNavigateToDocW
 <table class="w-full border-collapse border border-gray-800 text-sm !m-0">
   <tbody>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold w-1/5">项目名称</td>
+      <td class="border border-gray-800 p-3 text-center font-normal w-1/5">项目名称</td>
       <td class="border border-gray-800 p-3" colspan="3">${project.name}</td>
     </tr>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold">被审计（调查）<br/>单位或个人</td>
+      <td class="border border-gray-800 p-3 text-center font-normal">被审计（调查）<br/>单位或个人</td>
       <td class="border border-gray-800 p-3" colspan="3">${project.object}</td>
     </tr>
     <tr>
@@ -789,11 +794,11 @@ xxx县2025年度县级本级预算编制及规范，<strong>预算执行、决�
 <table class="w-full border-collapse border border-gray-800 text-sm !m-0">
   <tbody>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold w-1/5">项目名称</td>
+      <td class="border border-gray-800 p-3 text-center font-normal w-1/5">项目名称</td>
       <td class="border border-gray-800 p-3" colspan="3">${project.name}</td>
     </tr>
     <tr>
-      <td class="border border-gray-800 p-3 text-center font-bold">审计（调查）<br/>事项</td>
+      <td class="border border-gray-800 p-3 text-center font-normal">审计（调查）<br/>事项</td>
       <td class="border border-gray-800 p-3" colspan="3">取证单汇总核查</td>
     </tr>
     <tr>
@@ -1127,7 +1132,7 @@ function AuthTab({ project }: { project: AuditProject }) {
           <tbody className="divide-y divide-gray-50">
             {projectApprovals.map(approval => (
               <tr key={approval.id}>
-                <td className="px-4 py-4 font-medium text-gray-900">{approval.database}</td>
+                <td className="px-4 py-4 font-normal text-gray-900">{approval.database}</td>
                 <td className="px-4 py-4 text-gray-500 max-w-[200px] truncate" title={approval.applyNote}>{approval.applyNote}</td>
                 <td className="px-4 py-4 text-gray-500">{approval.applyTime}</td>
                 <td className="px-4 py-4">
@@ -1349,29 +1354,275 @@ function AuthTab({ project }: { project: AuditProject }) {
   );
 }
 
+function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: RuleConfigurableCheckpoint, onClose: () => void, onSave: (cp: RuleConfigurableCheckpoint) => void }) {
+  const [formData, setFormData] = React.useState<RuleConfigurableCheckpoint>({ ...checkpoint });
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+      >
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Edit2 size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-normal tracking-tight text-gray-900">编辑业务审查点</h3>
+              <p className="text-xs text-gray-500 mt-0.5">配置校验逻辑与处罚依据</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 space-y-8">
+          {/* Name */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">审查点名称</label>
+            <input 
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full h-12 bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-bold"
+            />
+          </div>
+
+          {/* Logic Blocks */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <BrainCircuit size={14} className="text-orange-500" />
+                校验逻辑配置
+              </label>
+              <button 
+                onClick={() => {
+                  const newBlock: LogicBlock = {
+                    id: 'lb_' + Date.now(),
+                    leftTerm: '',
+                    operator: '>',
+                    rightTerm: '',
+                    rightType: 'param',
+                    relation: 'AND'
+                  };
+                  setFormData({ ...formData, logicBlocks: [...formData.logicBlocks, newBlock] });
+                }}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-3 py-1.5 bg-blue-50 rounded-lg transition-all"
+              >
+                <Plus size={14} />
+                添加条件
+              </button>
+            </div>
+            
+            <div className="space-y-4 relative pl-8 before:absolute before:left-[15px] before:top-4 before:bottom-4 before:w-px before:bg-gray-200">
+              {formData.logicBlocks.map((lb, idx) => (
+                <div key={lb.id} className="relative group/lb">
+                  {/* Relation Selector */}
+                  {idx > 0 && (
+                    <div className="absolute -left-[33px] top-1/2 -translate-y-1/2 z-10">
+                      <select 
+                        value={lb.relation}
+                        onChange={(e) => {
+                          const newBlocks = [...formData.logicBlocks];
+                          newBlocks[idx].relation = e.target.value;
+                          setFormData({ ...formData, logicBlocks: newBlocks });
+                        }}
+                        className="h-8 w-10 bg-white border border-gray-200 rounded-lg text-[12px] font-bold text-blue-600 outline-none text-center shadow-sm cursor-pointer hover:border-blue-300 transition-all appearance-none"
+                      >
+                        <option value="AND">且</option>
+                        <option value="OR">或</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 flex flex-wrap items-center gap-3 transition-all hover:bg-white hover:border-blue-100 hover:shadow-md group">
+                    <input 
+                      placeholder="变量 (如: 合同金额)" 
+                      value={lb.leftTerm}
+                      onChange={(e) => {
+                        const newBlocks = [...formData.logicBlocks];
+                        newBlocks[idx].leftTerm = e.target.value;
+                        setFormData({ ...formData, logicBlocks: newBlocks });
+                      }}
+                      className="flex-1 min-w-[150px] h-10 bg-white border border-gray-200 rounded-lg px-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                    />
+                    <select 
+                      value={lb.operator}
+                      onChange={(e) => {
+                        const newBlocks = [...formData.logicBlocks];
+                        newBlocks[idx].operator = e.target.value;
+                        setFormData({ ...formData, logicBlocks: newBlocks });
+                      }}
+                      className="h-10 w-16 bg-white border border-gray-200 rounded-lg text-[12px] font-bold text-center outline-none focus:ring-2 focus:ring-blue-500/10"
+                    >
+                      <option value=">">&gt;</option>
+                      <option value="<">&lt;</option>
+                      <option value=">=">&gt;=</option>
+                      <option value="<=">&lt;=</option>
+                      <option value="==">==</option>
+                      <option value="!=">!=</option>
+                    </select>
+                    <input 
+                      placeholder="比较值" 
+                      value={lb.rightTerm}
+                      onChange={(e) => {
+                        const newBlocks = [...formData.logicBlocks];
+                        newBlocks[idx].rightTerm = e.target.value;
+                        setFormData({ ...formData, logicBlocks: newBlocks });
+                      }}
+                      className="flex-1 min-w-[150px] h-10 bg-white border border-gray-200 rounded-lg px-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                    />
+                    
+                    <div className="flex items-center gap-3 px-3 py-2 bg-white rounded-lg border border-gray-100">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={lb.rightType === 'param'}
+                          onChange={(e) => {
+                            const newBlocks = [...formData.logicBlocks];
+                            newBlocks[idx].rightType = e.target.checked ? 'param' : 'fixed';
+                            setFormData({ ...formData, logicBlocks: newBlocks });
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">参数化</span>
+                      </label>
+                      {lb.rightType === 'param' && (
+                        <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
+                          <input 
+                            placeholder="单位" 
+                            value={lb.paramUnit || ''}
+                            onChange={(e) => {
+                              const newBlocks = [...formData.logicBlocks];
+                              newBlocks[idx].paramUnit = e.target.value;
+                              setFormData({ ...formData, logicBlocks: newBlocks });
+                            }}
+                            className="w-12 h-7 bg-gray-50 border border-gray-200 rounded px-2 text-[12px] outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        const newBlocks = [...formData.logicBlocks];
+                        newBlocks.splice(idx, 1);
+                        setFormData({ ...formData, logicBlocks: newBlocks });
+                      }}
+                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {formData.logicBlocks.length === 0 && (
+                <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400">
+                  尚未配置任何校验逻辑
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Basis */}
+          <div className="space-y-4">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <BookOpen size={14} className="text-green-500" />
+              处罚与定性依据
+            </label>
+            <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">法规来源</span>
+                  <input 
+                    type="text"
+                    value={formData.penaltyBasis.source}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      penaltyBasis: { ...formData.penaltyBasis, source: e.target.value } 
+                    })}
+                    className="w-full h-10 bg-white border border-gray-200 rounded-xl px-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">章节条款</span>
+                  <input 
+                    type="text"
+                    value={formData.penaltyBasis.chapter}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      penaltyBasis: { ...formData.penaltyBasis, chapter: e.target.value } 
+                    })}
+                    className="w-full h-10 bg-white border border-gray-200 rounded-xl px-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">依据原文</span>
+                <textarea 
+                  rows={4}
+                  value={formData.penaltyBasis.content}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    penaltyBasis: { ...formData.penaltyBasis, content: e.target.value } 
+                  })}
+                  className="w-full bg-white border border-gray-200 rounded-2xl p-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3 sticky bottom-0 z-10">
+          <button 
+            onClick={onClose}
+            className="px-6 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-all"
+          >
+            取消
+          </button>
+          <button 
+            onClick={() => onSave(formData)}
+            className="px-8 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+          >
+            保存修改
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 function ScreeningTab({ project }: { project: AuditProject }) {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [hasExecuted, setHasExecuted] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [isModelModalOpen, setIsModelModalOpen] = React.useState(false);
   const [selectedModelId, setSelectedModelId] = React.useState<string | null>('m411');
-  const [activeCategoryId, setActiveCategoryId] = React.useState<string>('cat1');
   const [visibleSteps, setVisibleSteps] = React.useState<number>(0);
   const [selectedStepId, setSelectedStepId] = React.useState<number | null>(null);
 
-  const [projectCheckpoints, setProjectCheckpoints] = React.useState<any>(null);
-  const [editingCheckpointIndex, setEditingCheckpointIndex] = React.useState<number | null>(null);
+  const [rules, setRules] = React.useState<AuditRule[]>(MOCK_RULES);
+  const [selectedRuleIds, setSelectedRuleIds] = React.useState<string[]>(rules.map(r => r.id));
+  const [activeCategoryId, setActiveCategoryId] = React.useState<string>('cat1');
+  const [editingCheckpoint, setEditingCheckpoint] = React.useState<{ruleId: string, index: number} | null>(null);
 
-  React.useEffect(() => {
-    if (selectedModelId) {
-      const cps = JSON.parse(JSON.stringify(MOCK_CHECKPOINTS[selectedModelId] || MOCK_CHECKPOINTS['m411']));
-      cps.fixed = cps.fixed.map((cp: any) => ({ ...cp, checked: true }));
-      cps.configurable = cps.configurable.map((cp: any) => ({ ...cp, checked: true }));
-      setProjectCheckpoints(cps);
-    } else {
-      setProjectCheckpoints(null);
-    }
-  }, [selectedModelId]);
+  const handleToggleRule = (ruleId: string) => {
+    setSelectedRuleIds(prev => 
+      prev.includes(ruleId) 
+        ? prev.filter(id => id !== ruleId)
+        : [...prev, ruleId]
+    );
+  };
 
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -1390,7 +1641,6 @@ function ScreeningTab({ project }: { project: AuditProject }) {
         const next = prev + 1;
         const currentVisibleSteps = Math.floor((next / 100) * MOCK_EXECUTION_STEPS.length);
         setVisibleSteps(currentVisibleSteps);
-        // Automatically select the latest visible step during generation
         if (currentVisibleSteps > 0) {
           setSelectedStepId(currentVisibleSteps);
         }
@@ -1400,8 +1650,17 @@ function ScreeningTab({ project }: { project: AuditProject }) {
   };
 
   const selectedModel = MOCK_MODELS.find(m => m.id === selectedModelId);
-  const checkpoints = selectedModelId ? MOCK_CHECKPOINTS[selectedModelId] || MOCK_CHECKPOINTS['m411'] : null;
   const selectedStep = MOCK_EXECUTION_STEPS.find(s => s.id === selectedStepId);
+
+  const updateRuleCheckpoint = (ruleId: string, cpIndex: number, updatedCp: RuleConfigurableCheckpoint) => {
+    setRules(prev => prev.map(rule => {
+      if (rule.id !== ruleId) return rule;
+      const newConfigurable = [...rule.configurableCheckpoints];
+      newConfigurable[cpIndex] = updatedCp;
+      return { ...rule, configurableCheckpoints: newConfigurable };
+    }));
+    setEditingCheckpoint(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -1428,7 +1687,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
           </button>
           <button 
             onClick={handleGenerate}
-            disabled={isGenerating || !selectedModelId}
+            disabled={isGenerating || selectedRuleIds.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
           >
             <Play size={18} />
@@ -1439,7 +1698,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
 
       {/* Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Checkpoints */}
+        {/* Left: Checkpoints Grouped by Rule */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[600px]">
           <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -1447,108 +1706,92 @@ function ScreeningTab({ project }: { project: AuditProject }) {
               <h3 className="text-sm font-normal tracking-tight text-gray-900">模型执行审查点</h3>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {projectCheckpoints ? (
-              <>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <div className="w-1 h-3 bg-blue-600 rounded-full" />
-                    法定底层固定审查点
-                  </h4>
-                  <div className="space-y-3">
-                    {projectCheckpoints.fixed.map((cp: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 transition-all hover:border-blue-100 hover:shadow-sm group flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={cp.checked !== false}
-                          onChange={(e) => {
-                            const newCp = [...projectCheckpoints.fixed];
-                            newCp[idx].checked = e.target.checked;
-                            setProjectCheckpoints({...projectCheckpoints, fixed: newCp});
-                          }}
-                          className="mt-1 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer w-4 h-4 shrink-0"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-gray-900 leading-snug">{cp.title}</p>
-                          <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{cp.description}</p>
-                        </div>
-                      </div>
-                    ))}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {rules.map((rule) => {
+              const isSelected = selectedRuleIds.includes(rule.id);
+              return (
+                <div 
+                  key={rule.id} 
+                  className={cn(
+                    "p-4 rounded-2xl border transition-all cursor-pointer",
+                    isSelected 
+                      ? "bg-blue-50/30 border-blue-200 shadow-sm" 
+                      : "bg-white border-gray-100 hover:border-gray-200"
+                  )}
+                  onClick={() => handleToggleRule(rule.id)}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={cn(
+                      "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                      isSelected ? "border-blue-600 bg-blue-600" : "border-gray-200"
+                    )}>
+                      {isSelected && <Check size={12} className="text-white" />}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900">{rule.name}</h4>
+                      <p className="text-[12px] text-gray-400 uppercase tracking-widest mt-0.5">{rule.businessType}</p>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <div className="w-1 h-3 bg-green-600 rounded-full" />
-                    可配置业务执行审查点
-                  </h4>
-                  <div className="space-y-3">
-                    {projectCheckpoints.configurable.map((cp: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 transition-all hover:border-green-100 hover:shadow-sm">
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={cp.checked !== false}
-                            onChange={(e) => {
-                              const newCp = [...projectCheckpoints.configurable];
-                              newCp[idx].checked = e.target.checked;
-                              setProjectCheckpoints({...projectCheckpoints, configurable: newCp});
-                            }}
-                            className="mt-1 w-4 h-4 text-green-600 bg-white border-gray-300 rounded focus:ring-green-500 cursor-pointer w-4 h-4 shrink-0"
-                          />
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start mb-2">
-                              <p className="text-sm font-bold text-gray-900 leading-snug pr-2">{cp.title}</p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 font-bold rounded shrink-0">可调阈值</span>
-                                {editingCheckpointIndex === idx ? (
-                                  <button onClick={() => setEditingCheckpointIndex(null)} className="p-1 hover:bg-gray-200 rounded text-green-600">
-                                    <Check size={14} />
-                                  </button>
-                                ) : (
-                                  <button onClick={() => setEditingCheckpointIndex(idx)} className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-blue-600">
-                                    <Edit2 size={14} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            {editingCheckpointIndex === idx ? (
-                              <div className="space-y-2 mt-3 bg-white p-2 rounded-lg border border-gray-100">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-600 font-medium w-10 shrink-0">阈值:</span>
-                                  <input 
-                                    className="flex-1 text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-400 focus:bg-white" 
-                                    value={cp.threshold}
-                                    onChange={(e) => {
-                                      const newCp = [...projectCheckpoints.configurable];
-                                      newCp[idx].threshold = e.target.value;
-                                      setProjectCheckpoints({...projectCheckpoints, configurable: newCp});
-                                    }}
-                                  />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-600 font-medium w-10 shrink-0">依据:</span>
-                                  <span className="flex-1 text-[10px] text-gray-500 bg-gray-50 border border-transparent rounded px-2 py-1.5">{cp.basis}</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <p className="text-xs text-gray-600 mt-1">阈值：<span className="font-medium">{cp.threshold}</span></p>
-                                <p className="text-[10px] text-gray-400 mt-1.5 italic">依据：{cp.basis}</p>
-                              </>
-                            )}
+
+                <div className="space-y-4">
+                  {/* Fixed Section */}
+                  {rule.fixedCheckpoints.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                        <div className="w-1 h-3 bg-blue-400 rounded-full" />
+                        法定底层固定审查点
+                      </div>
+                      <div className="space-y-2">
+                        {rule.fixedCheckpoints.map((cp, idx) => (
+                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                            <p className="text-xs font-bold text-gray-800">{cp.name}</p>
+                            <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">{cp.description}</p>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Configurable Section */}
+                  {rule.configurableCheckpoints.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                        <div className="w-1 h-3 bg-orange-400 rounded-full" />
+                        可配置业务审查点
+                      </div>
+                      <div className="space-y-2">
+                        {rule.configurableCheckpoints.map((cp, idx) => (
+                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-gray-100 shadow-sm group">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="text-xs font-bold text-gray-800">{cp.name}</p>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {cp.logicBlocks.map((lb, lIdx) => (
+                                    <span key={lIdx} className="px-1.5 py-0.5 bg-orange-50 text-orange-600 text-[12px] rounded border border-orange-100 font-mono">
+                                      {lb.leftTerm} {lb.operator} {lb.rightTerm}{lb.paramUnit || ''}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingCheckpoint({ ruleId: rule.id, index: idx });
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                            </div>
+                            <p className="text-[12px] text-gray-400 italic mt-2 border-t border-gray-50 pt-2">依据：{cp.penaltyBasis.source}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                <Search size={48} strokeWidth={1} className="mb-4 opacity-20" />
-                <p className="text-sm">请先选择审计模型</p>
               </div>
-            )}
+            )})}
           </div>
         </div>
 
@@ -1591,11 +1834,11 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                           {step.id}. {step.name}
                         </span>
                         {isActive && (
-                          <span className="text-[10px] text-purple-600 font-bold animate-pulse">执行中...</span>
+                          <span className="text-[12px] text-purple-600 font-bold animate-pulse">执行中...</span>
                         )}
                       </div>
                       <p className={cn(
-                        "text-[11px] mt-0.5 leading-relaxed",
+                        "text-[12px] mt-0.5 leading-relaxed",
                         isVisible ? "text-gray-500" : "text-gray-300"
                       )}>
                         {step.description}
@@ -1623,8 +1866,8 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                 
                 {selectedStep.content.type === 'table' && (
                   <div className="border border-gray-100 rounded-xl overflow-hidden">
-                    <table className="w-full text-[11px] text-left">
-                      <thead className="bg-gray-50 text-gray-500 font-bold">
+                    <table className="w-full text-[12px] text-left">
+                      <thead className="bg-gray-50 text-gray-500 font-normal">
                         <tr>
                           {selectedStep.content.headers.map((h: string, i: number) => (
                             <th key={i} className="px-3 py-2">{h}</th>
@@ -1646,7 +1889,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
 
                 {selectedStep.content.type === 'code' && (
                   <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
-                    <pre className="text-[11px] text-blue-400 font-mono leading-relaxed">
+                    <pre className="text-[12px] text-blue-400 font-mono leading-relaxed">
                       <code>{selectedStep.content.code}</code>
                     </pre>
                   </div>
@@ -1657,7 +1900,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                     {selectedStep.content.items.map((item: string, i: number) => (
                       <div key={i} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
                         <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5" />
-                        <span className="text-[11px] text-gray-600">{item}</span>
+                        <span className="text-[12px] text-gray-600">{item}</span>
                       </div>
                     ))}
                   </div>
@@ -1665,7 +1908,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
 
                 {selectedStep.content.type === 'info' && (
                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-[11px] text-blue-700 leading-relaxed">
+                    <p className="text-[12px] text-blue-700 leading-relaxed">
                       {selectedStep.content.text}
                     </p>
                   </div>
@@ -1680,6 +1923,17 @@ function ScreeningTab({ project }: { project: AuditProject }) {
           </div>
         </div>
       </div>
+
+      {/* Edit Checkpoint Modal */}
+      <AnimatePresence>
+        {editingCheckpoint && (
+          <EditCheckpointModal 
+            checkpoint={rules.find(r => r.id === editingCheckpoint.ruleId)!.configurableCheckpoints[editingCheckpoint.index]}
+            onClose={() => setEditingCheckpoint(null)}
+            onSave={(updatedCp) => updateRuleCheckpoint(editingCheckpoint.ruleId, editingCheckpoint.index, updatedCp)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Model Selection Modal */}
       <AnimatePresence>
@@ -1735,7 +1989,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                 {/* Right List */}
                 <div className="flex-1 overflow-y-auto p-6 bg-white">
                   <div className="grid grid-cols-1 gap-4">
-                    {MOCK_MODELS.filter(m => m.categoryId === activeCategoryId).map(model => (
+                    {MOCK_MODELS.filter(m => m.categoryId === activeCategoryId && m.status === 'published').map(model => (
                       <div 
                         key={model.id}
                         onClick={() => setSelectedModelId(model.id)}
@@ -1867,7 +2121,7 @@ function SuspicionTab({ suspicions, onGenerateEvidence }: { suspicions: Suspicio
                       onChange={() => toggleOne(s.id)}
                     />
                   </td>
-                  <td className="px-4 py-4 font-medium text-gray-900 max-w-md">{s.description}</td>
+                  <td className="px-4 py-4 font-normal text-gray-900 max-w-md">{s.description}</td>
                   <td className="px-4 py-4 text-gray-500">{s.amount.toLocaleString()}</td>
                   <td className="px-4 py-4">
                     <span className={cn(
@@ -2086,7 +2340,7 @@ function SuspicionTab({ suspicions, onGenerateEvidence }: { suspicions: Suspicio
                               {selectedSourceSuspicion.sourceDetails.dataSnapshot && typeof selectedSourceSuspicion.sourceDetails.dataSnapshot === 'object' ? (
                                 Object.entries(selectedSourceSuspicion.sourceDetails.dataSnapshot as Record<string, any>).map(([key, value]) => (
                                   <tr key={key} className="hover:bg-gray-50">
-                                    <td className="px-4 py-2.5 font-medium text-gray-500 bg-gray-50/50 w-1/3 border-r border-gray-100">{key}</td>
+                                    <td className="px-4 py-2.5 font-normal text-gray-500 bg-gray-50/50 w-1/3 border-r border-gray-100">{key}</td>
                                     <td className="px-4 py-2.5 text-gray-900 font-mono text-xs max-w-xs truncate" title={String(value)}>{value}</td>
                                   </tr>
                                 ))

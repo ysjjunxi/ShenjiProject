@@ -5,7 +5,8 @@ import {
   Clock, 
   FileText, 
   ShieldCheck, 
-  BrainCircuit, 
+  Zap,
+  Blocks, 
   ClipboardList, 
   FileCheck,
   Plus,
@@ -29,29 +30,32 @@ import {
   Info,
   ExternalLink,
   Settings,
-  X
+  X,
+  BookOpen,
+  Database
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { AuditModel, ModelVersion, ToolParam, AuditRule } from '@/src/types';
+import { AuditModel, ModelVersion, ToolParam, ModelCheckpoint } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
-import { MOCK_RULES } from './AuditRuleMgmt';
+import { KNOWLEDGE_BASES, MOCK_MATERIALS } from '@/src/constants';
 
 interface AuditModelDetailProps {
   model: AuditModel;
   onBack: () => void;
+  onUpdate: (updatedModel: AuditModel) => void;
 }
 
-type TabType = 'basic' | 'datasource' | 'checkpoints' | 'process';
+type TabType = 'basic' | 'knowledge_base' | 'checkpoints' | 'process';
 
 const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'basic', label: '基本信息', icon: <FileText size={18} /> },
-  { id: 'datasource', label: '数据源', icon: <ClipboardList size={18} /> },
+  { id: 'knowledge_base', label: '知识库', icon: <BookOpen size={18} /> },
   { id: 'checkpoints', label: '审查点', icon: <ShieldCheck size={18} /> },
-  { id: 'process', label: '审计流程', icon: <BrainCircuit size={18} /> },
+  { id: 'process', label: '审计流程', icon: <Zap size={18} /> },
 ];
 
-export default function AuditModelDetail({ model, onBack }: AuditModelDetailProps) {
+export default function AuditModelDetail({ model, onBack, onUpdate }: AuditModelDetailProps) {
   const [activeTab, setActiveTab] = React.useState<TabType>('basic');
   const [showVersionModal, setShowVersionModal] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
@@ -62,6 +66,22 @@ export default function AuditModelDetail({ model, onBack }: AuditModelDetailProp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleSetDefaultVersion = (v: ModelVersion) => {
+    const updatedVersions = model.versions.map(version => ({
+      ...version,
+      isDefault: version.version === v.version
+    }));
+
+    const updatedModel: AuditModel = {
+      ...model,
+      version: v.version,
+      versions: updatedVersions,
+      updatedAt: Date.now()
+    };
+
+    onUpdate(updatedModel);
   };
 
   return (
@@ -136,7 +156,7 @@ export default function AuditModelDetail({ model, onBack }: AuditModelDetailProp
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'basic' && <BasicInfoTab model={model} />}
-              {activeTab === 'datasource' && <DataSourceTab model={model} />}
+              {activeTab === 'knowledge_base' && <KnowledgeBaseTab model={model} />}
               {activeTab === 'checkpoints' && <CheckpointsTab model={model} />}
               {activeTab === 'process' && <ProcessTab model={model} />}
             </motion.div>
@@ -174,11 +194,11 @@ export default function AuditModelDetail({ model, onBack }: AuditModelDetailProp
                 <table className="w-full text-sm text-left">
                   <thead className="text-[10px] text-gray-400 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100 sticky top-0">
                     <tr>
-                      <th className="px-8 py-4 font-bold">版本号</th>
-                      <th className="px-8 py-4 font-bold">修改记录</th>
-                      <th className="px-8 py-4 font-bold">修改人</th>
-                      <th className="px-8 py-4 font-bold">修改时间</th>
-                      <th className="px-8 py-4 font-bold">操作</th>
+                      <th className="px-8 py-4 font-normal">版本号</th>
+                      <th className="px-8 py-4 font-normal">修改记录</th>
+                      <th className="px-8 py-4 font-normal">修改人</th>
+                      <th className="px-8 py-4 font-normal">修改时间</th>
+                      <th className="px-8 py-4 font-normal">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -186,7 +206,7 @@ export default function AuditModelDetail({ model, onBack }: AuditModelDetailProp
                       <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-8 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-900">{v.version}</span>
+                            <span className="font-normal text-gray-900">{v.version}</span>
                             {v.isDefault && (
                               <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded uppercase border border-blue-100">DEFAULT</span>
                             )}
@@ -197,7 +217,12 @@ export default function AuditModelDetail({ model, onBack }: AuditModelDetailProp
                         <td className="px-8 py-4 text-gray-400 text-xs">{new Date(v.createdAt).toLocaleString()}</td>
                         <td className="px-8 py-4">
                           {!v.isDefault && (
-                            <button className="text-blue-600 hover:underline font-medium">设为默认</button>
+                            <button 
+                              onClick={() => handleSetDefaultVersion(v)}
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              设为默认
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -258,125 +283,126 @@ function BasicInfoTab({ model }: { model: AuditModel }) {
   );
 }
 
-function DataSourceTab({ model }: { model: AuditModel }) {
+function KnowledgeBaseTab({ model }: { model: AuditModel }) {
+  const kb = KNOWLEDGE_BASES.find(k => k.id === model.knowledgeBaseId);
+  const materials = MOCK_MATERIALS.filter(m => model.materialIds?.includes(m.id));
+
   return (
-    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
-      <h3 className="text-lg font-normal tracking-tight text-gray-900 flex items-center gap-2">
-        <ClipboardList size={20} className="text-blue-600" />
-        模型数据源
-      </h3>
-      <div className="grid grid-cols-1 gap-6">
-        {model.dataSources?.map((ds, idx) => (
-          <div key={idx} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">数据库</span>
-                <span className="text-sm font-bold text-gray-900">{ds.db}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">数据表</span>
-                <span className="text-sm font-bold text-blue-600">{ds.table}</span>
-              </div>
-            </div>
+    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-8">
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <BookOpen size={20} className="text-indigo-600" />
+          关联知识库详情
+        </h3>
+        {kb ? (
+          <div className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">查询字段</h4>
-              <div className="flex flex-wrap gap-2">
-                {ds.fields.map(f => (
-                  <span key={f} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono text-gray-700 shadow-sm">
-                    {f}
-                  </span>
-                ))}
+              <p className="text-sm font-bold text-gray-900">{kb.name}</p>
+              <p className="text-xs text-gray-500 mt-1">{kb.description || '暂无描述'}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">包含文档</p>
+                <p className="text-sm font-bold text-gray-900">{kb.docCount} 份</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">存储类型</p>
+                <p className="text-sm font-bold text-indigo-600">{kb.storageType}</p>
               </div>
             </div>
           </div>
-        ))}
-        {(!model.dataSources || model.dataSources.length === 0) && (
-          <div className="text-center py-12 text-gray-400 italic">暂无数据源配置</div>
+        ) : (
+          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-gray-400 italic text-sm">
+            未关联知识库
+          </div>
         )}
+      </div>
+
+      <div className="space-y-4 pt-4 border-t border-gray-50">
+        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+          <ClipboardList size={18} className="text-gray-400" />
+          已选审计资料 ({materials.length})
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {materials.map(m => (
+            <div key={m.id} className="p-4 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                <FileText size={16} />
+              </div>
+              <span className="text-sm font-medium text-gray-700 truncate" title={m.name}>{m.name}</span>
+            </div>
+          ))}
+          {materials.length === 0 && (
+            <div className="col-span-full py-12 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-100 text-gray-400 text-sm">
+              未选择具体审计资料，大模型将检索整个知识库。
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 function CheckpointsTab({ model }: { model: AuditModel }) {
-  const rules = model.ruleIds ? MOCK_RULES.filter(r => model.ruleIds?.includes(r.id)) : [];
+  const checkpoints = model.checkpoints || [];
 
-  if (rules.length === 0) {
+  if (checkpoints.length === 0) {
     return (
       <div className="bg-white p-12 text-center rounded-3xl border border-gray-100 shadow-sm">
         <ShieldCheck size={32} className="mx-auto text-gray-300 mb-3" />
-        <h3 className="text-sm font-medium text-gray-900 mb-1">未关联审计规则</h3>
-        <p className="text-xs text-gray-500">无法查看审查点，请先在模型编辑器中绑定来自规则库的审计规则。</p>
+        <h3 className="text-sm font-medium text-gray-900 mb-1">未配置审查点</h3>
+        <p className="text-xs text-gray-500">该模型尚未配置审查点，请在编辑器中进行配置。</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {rules.map(rule => (
-        <div key={rule.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+      {checkpoints.map((cp, idx) => (
+        <div key={cp.id} className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-normal tracking-tight text-gray-900 flex items-center gap-2">
-              <ShieldCheck size={20} className="text-blue-600" />
-              审查点详情 <span className="text-xs text-gray-400 font-normal ml-2">(数据来源于审计规则管理: {rule.name})</span>
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold ring-1 ring-blue-100">
+                {idx + 1}
+              </span>
+              {cp.name}
             </h3>
           </div>
 
-          {/* Fixed Checkpoints */}
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 mb-3">固定审查点</h4>
-            <div className="space-y-3">
-              {rule.fixedCheckpoints.map((cp, idx) => (
-                <div key={idx} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <h5 className="text-sm font-bold text-gray-900 mb-2">{cp.name}</h5>
-                  <p className="text-sm text-gray-600 leading-relaxed bg-white border border-gray-200 p-3 rounded-lg shadow-sm">{cp.description}</p>
-                </div>
-              ))}
-              {rule.fixedCheckpoints.length === 0 && <div className="text-xs text-gray-400 italic">暂无法定审查点</div>}
+          <div className="space-y-6">
+            <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+              <p className="text-sm text-gray-600 leading-relaxed italic">{cp.description}</p>
             </div>
-          </div>
 
-          {/* Configurable Checkpoints & Scripts */}
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 mb-3 mt-8">可配置业务审查点及相关执行脚本</h4>
-            <div className="space-y-6">
-              {rule.configurableCheckpoints && rule.configurableCheckpoints.length > 0 ? (
-                <div className="space-y-4">
-                  {rule.configurableCheckpoints.map((cc) => (
-                    <div key={cc.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-100 space-y-4 shadow-sm">
-                      <h5 className="text-sm font-bold text-gray-900">{cc.name}</h5>
-                      <div className="space-y-2">
-                        {cc.logicBlocks.map((lb, bIdx) => (
-                          <div key={lb.id} className="text-xs text-gray-700 bg-white p-3 rounded-xl border border-gray-200 flex items-center flex-wrap gap-2">
-                             {bIdx > 0 && <span className="font-bold text-orange-600 mr-2">{lb.relation === 'OR' ? '或' : '且'}</span>}
-                             <span className="font-mono text-gray-900">{lb.leftTerm}</span>
-                             <span className="mx-2 text-gray-500 font-mono">{lb.operator}</span>
-                             {lb.rightType === 'fixed' ? (
-                               <span className="font-mono text-gray-900">{lb.rightTerm} {lb.paramUnit}</span>
-                             ) : (
-                               <span className="font-mono text-purple-700 bg-purple-50 px-2 py-0.5 rounded">参数: {lb.rightTerm} (默认: {lb.paramValue}{lb.paramUnit}, 范围: {lb.paramRangeMin}~{lb.paramRangeMax})</span>
-                             )}
-                          </div>
-                        ))}
-                      </div>
-                      {cc.penaltyBasis?.source && (
-                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-3">
-                          <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">判罚依据: {cc.penaltyBasis.source} - {cc.penaltyBasis.chapter}</span>
-                          <p className="text-sm text-gray-700">{cc.penaltyBasis.content}</p>
-                        </div>
-                      )}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <Database size={14} /> 关联标准数据表
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {cp.standardTables.map((table, tIdx) => (
+                  <div key={tIdx} className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                      {table.tableName}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-gray-400 italic">暂无可配置业务审查点</div>
-              )}
+                    <div className="flex flex-wrap gap-2">
+                      {table.fields.map(f => (
+                        <span key={f} className="px-2.5 py-1 bg-gray-50 text-gray-500 text-[10px] font-mono rounded-lg border border-gray-100">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            <div className="mt-8 pt-6 border-t border-gray-100">
-              <h4 className="text-sm font-bold text-gray-900 mb-3">相关执行脚本</h4>
-              <div className="w-full bg-gray-900 text-blue-100 font-mono p-4 rounded-2xl border border-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                {model.scripts.generation}
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <Code size={14} /> 数据查询脚本 (SQL)
+              </h4>
+              <div className="w-full bg-gray-900 text-blue-100 font-mono p-5 rounded-2xl border border-gray-800 text-sm leading-relaxed whitespace-pre-wrap shadow-inner overflow-hidden">
+                {cp.script || '-- 暂未编写脚本'}
               </div>
             </div>
           </div>
@@ -390,7 +416,7 @@ function ProcessTab({ model }: { model: AuditModel }) {
   if (!model.auditProcessMd) {
     return (
       <div className="bg-white p-12 text-center rounded-3xl border border-gray-100 shadow-sm">
-        <BrainCircuit size={32} className="mx-auto text-gray-300 mb-3" />
+        <Blocks size={32} className="mx-auto text-gray-300 mb-3" />
         <h3 className="text-sm font-medium text-gray-900 mb-1">未找到审计流程说明</h3>
         <p className="text-xs text-gray-500">模型尚未配置对应的Markdown流程文件</p>
       </div>

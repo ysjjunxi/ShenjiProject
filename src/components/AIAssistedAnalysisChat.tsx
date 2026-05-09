@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Database, 
+  Bot,
   Search, 
   ChevronDown, 
   Send, 
@@ -8,8 +9,9 @@ import {
   Code2, 
   Play, 
   MessageSquare, 
-  BrainCircuit, 
+  Zap, 
   Sparkles,
+  Check,
   Info,
   CheckCircle2,
   AlertCircle,
@@ -33,19 +35,34 @@ interface AIAssistedAnalysisChatProps {
 
 const MOCK_DATA_SOURCES = [
   { 
-    id: 'ds1', name: '生产环境财务库', type: 'MySQL', status: 'connected',
+    id: 'ds1', name: '标准审计数据库', type: 'MySQL', status: 'connected',
     tables: [
       { name: '财务凭证表', description: '记录所有财务账套凭证', fields: [{ name: 'voucher_id', type: 'VARCHAR(32)' }, { name: 'amount', type: 'DECIMAL(18,2)' }, { name: 'created_at', type: 'TIMESTAMP' }] },
-      { name: '报销明细表', description: '员工日常报销费用明细', fields: [{ name: 'expense_id', type: 'VARCHAR(32)' }, { name: 'emp_name', type: 'VARCHAR(64)' }, { name: 'status', type: 'INT' }] }
+      { name: '报销明细表', description: '员工日常报销费用明细', fields: [{ name: 'expense_id', type: 'VARCHAR(32)' }, { name: 'emp_name', type: 'VARCHAR(64)' }, { name: 'status', type: 'INT' }] },
+      { name: '员工信息表', description: '包含在职及离职员工基础信息', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'department', type: 'VARCHAR(128)' }] }
+    ],
+    views: [
+      { name: '月度财务统计视图', description: '按月统计的财务凭证汇总视图', fields: [{ name: 'month', type: 'VARCHAR(7)' }, { name: 'total_amount', type: 'DECIMAL(18,2)' }] }
     ]
   },
   { 
-    id: 'ds2', name: '人力资源系统库', type: 'Oracle', status: 'connected',
+    id: 'ds2', name: '核心业务数据库', type: 'Oracle', status: 'connected',
     tables: [
-      { name: '员工信息表', description: '包含在职及离职员工基础信息', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'department', type: 'VARCHAR(128)' }] }
+      { name: '订单交易表', description: '核心系统交易流水', fields: [{ name: 'order_id', type: 'VARCHAR(32)' }, { name: 'customer_id', type: 'VARCHAR(32)' }, { name: 'trade_time', type: 'TIMESTAMP' }] },
+      { name: '商品库存表', description: '各个仓库的商品实时库存', fields: [{ name: 'product_id', type: 'VARCHAR(32)' }, { name: 'quantity', type: 'INT' }, { name: 'warehouse_id', type: 'VARCHAR(32)' }] },
+    ],
+    views: [
+      { name: '高风险交易视图', description: '金额超过阈值的异常交易', fields: [{ name: 'order_id', type: 'VARCHAR(32)' }, { name: 'risk_score', type: 'DECIMAL(5,2)' }] }
     ]
   },
-  { id: 'ds3', name: '审计底稿归档库', type: 'SQLServer', status: 'connected', tables: [] },
+  { 
+    id: 'ds3', name: '人力资源数据库', type: 'PostgreSQL', status: 'connected',
+    tables: [
+      { name: '绩效考评表', description: '历年员工绩效考核结果', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'year', type: 'INT' }, { name: 'grade', type: 'VARCHAR(10)' }] },
+      { name: '薪资发放表', description: '员工薪酬发放流水', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'salary', type: 'DECIMAL(18,2)' }, { name: 'pay_date', type: 'DATE' }] },
+    ],
+    views: []
+  }
 ];
 
 interface ChatMessage {
@@ -62,6 +79,16 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
     {
       role: 'assistant',
       content: '你好，我是数据库查询智能体！我可以根据自然语言描述，自动生成 SQL 查询语句。'
+    },
+    {
+      role: 'user',
+      content: '帮我查询一下财务凭证表中，金额大于10000的记录，并且按创建时间倒序排列。'
+    },
+    {
+      role: 'assistant',
+      content: '好的，我已经为您生成了查询财务凭证表中金额大于10000的记录的 SQL 语句：',
+      sql: 'SELECT voucher_id, amount, created_at\nFROM 财务凭证表\nWHERE amount > 10000\nORDER BY created_at DESC;',
+      explanation: '该查询从“财务凭证表”中筛选出金额（amount）大于 10000 的所有凭证记录，并使用 ORDER BY 语句根据创建时间（created_at）进行降序（DESC）排列，以便您最先看到最新的大额凭证。'
     }
   ]);
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -69,20 +96,19 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
   const [showInputDsDropdown, setShowInputDsDropdown] = React.useState(false);
   const [dbSearchQuery, setDbSearchQuery] = React.useState('');
   const [viewingTable, setViewingTable] = React.useState<any>(null);
-  const [previewDsId, setPreviewDsId] = React.useState<string | null>(null);
+  const [popoverSelectedDsId, setPopoverSelectedDsId] = React.useState('ds1');
 
   const selectedDs = MOCK_DATA_SOURCES.find(ds => ds.id === selectedDsId);
-  const previewDs = MOCK_DATA_SOURCES.find(ds => ds.id === (previewDsId || selectedDsId));
+  const popoverDs = MOCK_DATA_SOURCES.find(ds => ds.id === popoverSelectedDsId);
   const chatEndRef = React.useRef<HTMLDivElement>(null);
 
   const filteredDatabases = MOCK_DATA_SOURCES.filter(ds => 
-    ds.name.toLowerCase().includes(dbSearchQuery.toLowerCase()) ||
-    ds.type.toLowerCase().includes(dbSearchQuery.toLowerCase())
+    ds.name.toLowerCase().includes(dbSearchQuery.toLowerCase())
   );
 
   React.useEffect(() => {
     if (showInputDsDropdown) {
-      setPreviewDsId(selectedDsId);
+      setPopoverSelectedDsId(selectedDsId || 'ds1');
     }
   }, [showInputDsDropdown, selectedDsId]);
 
@@ -157,12 +183,9 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
   return (
     <div className="flex-1 flex flex-col bg-white h-full relative z-50">
       {/* Header */}
-      <div className="px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0 flex items-center justify-between">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-normal text-gray-900 tracking-tight">AI 辅助分析</h2>
-            <p className="text-sm text-gray-500 mt-1">通过自然语言与 AI 对话，自动生成专业审计 SQL 语句</p>
-          </div>
+      <div className="px-6 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[50px] shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-normal text-gray-900 tracking-tight">AI 辅助分析及 SQL 生成</h2>
         </div>
       </div>
 
@@ -193,7 +216,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
               "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
               msg.role === 'user' ? "bg-blue-600 text-white" : "bg-white text-blue-600 border border-gray-100"
             )}>
-              {msg.role === 'user' ? <MessageSquare size={20} /> : <BrainCircuit size={20} />}
+              {msg.role === 'user' ? <MessageSquare size={20} /> : <Bot size={20} />}
             </div>
             <div className={cn(
               "space-y-3 max-w-[85%]",
@@ -229,13 +252,6 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
                     >
                       载入 SQL 编辑器
                     </button>
-                    <button 
-                      onClick={() => onExecute(msg.sql || '')}
-                      className="px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-500/10 flex items-center gap-2"
-                    >
-                      <Play size={12} />
-                      执行 SQL
-                    </button>
                   </div>
                 </div>
               )}
@@ -256,7 +272,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
         {isGenerating && (
           <div className="flex gap-4 mr-auto">
             <div className="w-10 h-10 rounded-2xl bg-white border border-gray-100 text-blue-600 flex items-center justify-center animate-pulse">
-              <BrainCircuit size={20} />
+              <Zap size={20} />
             </div>
             <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm flex items-center gap-3">
               <div className="flex gap-1">
@@ -274,7 +290,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
       {/* Input Area */}
       <div className="p-6 border-t border-gray-100 bg-white">
         <div className="max-w-4xl mx-auto space-y-4">
-          <div className="relative bg-gray-50 border border-gray-200 rounded-[24px] transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white focus-within:border-blue-200 shadow-sm">
+          <div className="relative group bg-gray-50 border border-gray-100 rounded-[28px] transition-all focus-within:bg-white focus-within:ring-0 shadow-sm flex flex-col">
             {selectedDsId && selectedDs && (
               <div className="px-5 pt-4">
                 <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full border border-blue-100 text-[11px] font-bold">
@@ -322,122 +338,104 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-[calc(100%+12px)] left-0 w-[600px] h-[400px] bg-white border border-gray-100 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[9999] overflow-hidden flex flex-col"
+                        className="absolute bottom-[calc(100%+12px)] left-0 w-[560px] bg-white border border-gray-100 rounded-[24px] shadow-2xl z-[9999] overflow-hidden flex flex-col"
+                        style={{ fontFamily: 'Arial, "Microsoft YaHei", sans-serif' }}
                       >
-                          <div className="p-4 border-b border-gray-50 shrink-0">
-                            <div className="relative">
-                              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                              <input 
-                                type="text"
-                                value={dbSearchQuery}
-                                onChange={(e) => setDbSearchQuery(e.target.value)}
-                                placeholder="搜索数据库"
-                                className="w-full h-10 bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                              />
+                        <div className="flex-1 flex min-h-[360px] max-h-[480px]">
+                          {/* Left: Database List */}
+                          <div className="w-1/3 border-r border-gray-50 flex flex-col bg-gray-50/30">
+                            <div className="p-3 border-b border-gray-50 bg-white/50">
+                              <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-2">数据库</span>
                             </div>
-                          </div>
-
-                          <div className="flex flex-1 min-h-0">
-                            {/* Left Side: Databases */}
-                            <div className="w-1/2 border-r border-gray-50 overflow-y-auto p-2">
-                              {filteredDatabases.length > 0 ? (
-                                filteredDatabases.map(ds => (
-                                  <div key={ds.id} className="mb-2 last:mb-0" onMouseEnter={() => setPreviewDsId(ds.id)}>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedDsId(ds.id);
-                                        setShowInputDsDropdown(false);
-                                      }}
-                                      className={cn(
-                                        "w-full flex items-center gap-3 p-3 text-left transition-all rounded-2xl group",
-                                        (previewDsId || selectedDsId) === ds.id ? "bg-blue-50/50" : "hover:bg-gray-50"
-                                      )}
-                                    >
-                                      <div className={cn(
-                                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all",
-                                        selectedDsId === ds.id 
-                                          ? "bg-blue-600 text-white" 
-                                          : "bg-gradient-to-br from-blue-400 to-blue-600 text-white opacity-80 group-hover:opacity-100"
-                                      )}>
-                                        <Database size={18} />
-                                      </div>
-                                      <div className="flex-1 overflow-hidden">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                          <span className="text-sm font-bold text-gray-800 tracking-tight truncate">{ds.name}</span>
-                                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded text-[9px] font-black uppercase tracking-widest shrink-0">{ds.type}</span>
-                                        </div>
-                                        <p className="text-[10px] text-gray-400 truncate">{ds.tables?.length || 0} 个数据表</p>
-                                      </div>
-                                      <ChevronRight 
-                                        size={16} 
-                                        className={cn(
-                                          "text-gray-400 transition-transform duration-200",
-                                          selectedDsId === ds.id ? "text-blue-500" : "opacity-0 group-hover:opacity-100"
-                                        )} 
-                                      />
-                                    </button>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="p-8 text-center">
-                                  <p className="text-xs text-gray-400">未找到相关数据源</p>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Right Side: Tables */}
-                            <div className="w-1/2 overflow-y-auto p-2 bg-gray-50/30">
-                              {previewDs ? (
-                                <div className="space-y-1">
-                                  {previewDs.tables && previewDs.tables.length > 0 ? (
-                                    previewDs.tables.map(table => (
-                                      <div key={table.name} className="flex items-center justify-between p-3 hover:bg-white rounded-xl group/table transition-all border border-transparent hover:border-gray-200 hover:shadow-sm">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                          <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0">
-                                            <TableProperties size={14} />
-                                          </div>
-                                          <div className="flex flex-col overflow-hidden">
-                                            <span className="text-xs font-bold text-gray-700 truncate">{table.name}</span>
-                                            <span className="text-[10px] text-gray-400 truncate">{table.description || '-'}</span>
-                                          </div>
-                                        </div>
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setViewingTable(table);
-                                            setShowInputDsDropdown(false);
-                                          }}
-                                          className="opacity-0 group-hover/table:opacity-100 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 rounded-lg text-[10px] font-bold shadow-sm hover:bg-blue-50 transition-all shrink-0 flex items-center gap-1"
-                                        >
-                                          <Eye size={12} />
-                                          查看
-                                        </button>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="p-8 text-center flex flex-col items-center justify-center h-full">
-                                      <TableProperties size={24} className="text-gray-300 mb-2" />
-                                      <p className="text-xs text-gray-400">该数据库暂无表结构数据</p>
-                                    </div>
+                            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                              {MOCK_DATA_SOURCES.map(ds => (
+                                <div 
+                                  key={ds.id}
+                                  onClick={() => {
+                                    setPopoverSelectedDsId(ds.id);
+                                    setSelectedDsId(ds.id);
+                                  }}
+                                  className={cn(
+                                    "px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all flex items-center gap-2 group",
+                                    popoverSelectedDsId === ds.id 
+                                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
+                                      : "text-gray-600 hover:bg-white hover:shadow-sm"
+                                  )}
+                                >
+                                  <Database size={14} className={popoverSelectedDsId === ds.id ? "text-white" : "text-gray-400 group-hover:text-blue-500"} />
+                                  <span className="truncate flex-1">{ds.name}</span>
+                                  {selectedDsId === ds.id && (
+                                    <div className={cn("w-1.5 h-1.5 rounded-full", popoverSelectedDsId === ds.id ? "bg-white" : "bg-blue-500")} />
                                   )}
                                 </div>
-                              ) : (
-                                <div className="p-8 text-center flex items-center justify-center h-full">
-                                  <p className="text-xs text-gray-400">请选择左侧数据库</p>
-                                </div>
-                              )}
+                              ))}
                             </div>
                           </div>
 
-                          {/* Footer */}
-                          <div className="px-5 py-3 bg-gray-50/50 border-t border-gray-50 flex items-center justify-between shrink-0">
-                            <span className="text-[11px] font-bold text-gray-400">{filteredDatabases.length} 个数据库可用</span>
-                            <button className="text-[11px] font-bold text-blue-600 flex items-center gap-1 hover:gap-2 transition-all">
-                              <span>管理数据库</span>
-                              <ArrowRight size={12} />
-                            </button>
+                          {/* Right: Tables & Views List */}
+                          <div className="flex-1 flex flex-col bg-white">
+                            <div className="p-3 border-b border-gray-50 flex items-center justify-between">
+                              <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-2">数据表与视图</span>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                              <div className="space-y-6">
+                                {/* Tables Section */}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-3 px-1">
+                                    <Library size={12} className="text-blue-500" />
+                                    <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">数据表 ({popoverDs?.tables.length || 0})</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-2">
+                                    {popoverDs?.tables.map((table: any) => (
+                                      <div 
+                                        key={table.name}
+                                        onClick={() => setViewingTable(table)}
+                                        className="group p-3 rounded-xl border border-gray-50 hover:border-blue-100 hover:bg-blue-50/30 transition-all cursor-pointer flex items-center justify-between"
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-gray-800 line-clamp-1">{table.name}</span>
+                                            <Eye size={12} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </div>
+                                          <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{table.description}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Views Section */}
+                                {(popoverDs?.views?.length || 0) > 0 && (
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3 px-1">
+                                      <Sparkles size={12} className="text-purple-500" />
+                                      <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">数据库视图 ({(popoverDs as any).views.length})</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2">
+                                      {(popoverDs as any).views.map((view: any) => (
+                                        <div 
+                                          key={view.name}
+                                          onClick={() => setViewingTable(view)}
+                                          className="group p-3 rounded-xl border border-gray-50 hover:border-purple-100 hover:bg-purple-50/30 transition-all cursor-pointer flex items-center justify-between"
+                                        >
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-xs font-bold text-gray-800 line-clamp-1">{view.name}</span>
+                                              <Eye size={12} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </div>
+                                            <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{view.description}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </motion.div>
+                        </div>
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -447,7 +445,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
                 <button 
                   onClick={handleSend}
                   disabled={!input.trim() || isGenerating}
-                  className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none"
+                  className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none"
                 >
                   <Send size={18} />
                 </button>
@@ -468,59 +466,87 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setViewingTable(null)}
-              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              className="relative bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              style={{ fontFamily: 'Arial, "Microsoft YaHei", sans-serif' }}
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-lg z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <TableProperties size={20} />
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-xl z-20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
+                    <TableProperties size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-none mb-1">{viewingTable.name}</h3>
-                    <p className="text-xs text-gray-500">{viewingTable.description || '表结构详情'}</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-bold text-gray-900 tracking-tight">{viewingTable.name}</h3>
+                      <span className={cn(
+                        "text-[12px] font-bold px-1.5 py-0.5 rounded",
+                        viewingTable.name.includes('视图') ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"
+                      )}>
+                        {viewingTable.name.includes('视图') ? 'VIEW' : 'TABLE'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-0.5">{viewingTable.description || '元数据结构详情'}</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setViewingTable(null)}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors"
+                  className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-all hover:rotate-90"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden text-sm">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 text-[12px] font-bold text-gray-400 uppercase tracking-widest">
                       <tr>
-                        <th className="px-6 py-4">字段名</th>
-                        <th className="px-6 py-4">类型</th>
-                        <th className="px-6 py-4">说明</th>
+                        <th className="px-6 py-4">字段名称 (Name)</th>
+                        <th className="px-6 py-4">数据类型 (Type)</th>
+                        <th className="px-6 py-4 text-right">约束 (Constraint)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-50 font-mono">
                       {viewingTable.fields.map((field: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono text-blue-600 font-medium">{field.name}</td>
-                          <td className="px-6 py-4 font-mono text-gray-500 text-xs">{field.type}</td>
-                          <td className="px-6 py-4 text-gray-600">-</td>
+                        <tr key={idx} className="hover:bg-blue-50/10 transition-colors group text-sm">
+                          <td className="px-6 py-4">
+                            <span className="font-bold text-blue-600 uppercase italic">{field.name}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-[12px] font-medium text-gray-500">{field.type}</span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {idx === 0 && (
+                                <span className="px-1.5 py-0.5 bg-yellow-50 text-yellow-600 text-[12px] font-bold rounded uppercase">PK</span>
+                              )}
+                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 text-[12px] font-bold rounded uppercase">NULL</span>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              <div className="p-6 bg-white border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 z-20">
+                <button 
+                  onClick={() => setViewingTable(null)}
+                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition-all"
+                >
+                  关闭
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

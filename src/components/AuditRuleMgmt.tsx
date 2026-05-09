@@ -28,134 +28,28 @@ import {
   ChevronDown,
   Check,
   BookOpen,
-  Link2
+  Link2,
+  Upload
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { AuditRule, RuleParam } from '@/src/types';
 import { MOCK_MODELS } from './AuditModelMgmt';
+import { MOCK_RULES } from '@/src/constants';
 import { motion, AnimatePresence } from 'motion/react';
-
-export const MOCK_RULES: AuditRule[] = [
-  {
-    id: 'r1',
-    name: '三公经费超预算校验规则',
-    businessType: '财务审计业务',
-    ruleType: 'general',
-    description: '用于识别三公经费超限额或无预算支出的违规情况。',
-    fixedCheckpoints: [
-      {
-        name: '预算刚性约束审查点',
-        description: '三公经费支出必须控制在年度预算额度内，不得超预算、无预算支出，无合规预算调整审批的超预算支出，自动触发疑点标记。'
-      }
-    ],
-    configurableCheckpoints: [
-      {
-        id: 'cc_1',
-        name: '三公经费超限额支出分析',
-        logicBlocks: [
-          {
-            id: 'lb_1',
-            leftTerm: '三公经费年度支出金额',
-            operator: '>',
-            rightTerm: '年度预算金额',
-            rightType: 'param',
-            paramValue: '10',
-            paramUnit: '%',
-            paramRangeMin: '5',
-            paramRangeMax: '20',
-            relation: 'AND'
-          },
-          {
-            id: 'lb_2',
-            leftTerm: '三公经费年度支出金额',
-            operator: '>',
-            rightTerm: '上年同期金额',
-            rightType: 'param',
-            paramValue: '15',
-            paramUnit: '%',
-            paramRangeMin: '5',
-            paramRangeMax: '30',
-            relation: ''
-          }
-        ],
-        penaltyBasis: {
-          source: '《党政机关厉行节约反对浪费条例》',
-          chapter: '第八条',
-          content: '党政机关应当严格执行综合预算，不得超预算或者无预算安排支出，不得虚列支出、转移或者套取预算资金。'
-        }
-      }
-    ],
-    outputData: '超过阈值的资金明细记录',
-    apiUrl: '/api/rules/check_amount',
-    status: 'enabled',
-    creator: '张审计',
-    createdAt: Date.now() - 86400000 * 10,
-    updatedAt: Date.now() - 3600000
-  },
-  {
-    id: 'r2',
-    name: '合同签订违规校验规则',
-    businessType: '工程审计业务',
-    ruleType: 'dedicated',
-    description: '识别潜在的违规拖延合同签订以及合同金额偏差。',
-    fixedCheckpoints: [
-      {
-        name: '合同签订时效与金额审查点',
-        description: '合同签订应及时且金额不得擅自偏离中标金额。'
-      }
-    ],
-    configurableCheckpoints: [
-      {
-        id: 'cc_2',
-        name: '合同违规判定',
-        logicBlocks: [
-          {
-            id: 'lb_3',
-            leftTerm: '中标至签订时间',
-            operator: '>',
-            rightTerm: '30',
-            rightType: 'fixed',
-            paramUnit: '天',
-            relation: 'OR'
-          },
-          {
-            id: 'lb_4',
-            leftTerm: '合同-中标金额偏差',
-            operator: '>=',
-            rightTerm: '中标金额',
-            rightType: 'param',
-            paramValue: '5',
-            paramUnit: '%',
-            paramRangeMin: '1',
-            paramRangeMax: '10',
-            relation: ''
-          }
-        ],
-        penaltyBasis: {
-          source: '《中华人民共和国政府采购法》',
-          chapter: '第四十六条',
-          content: '采购人与中标、成交供应商应当在中标、成交通知书发出之日起三十日内，按照采购文件确定的事项签订政府采购合同。'
-        }
-      }
-    ],
-    outputData: '违规拖延或金额异常的合同清单',
-    apiUrl: '/api/rules/check_contract',
-    status: 'enabled',
-    creator: '李审计',
-    createdAt: Date.now() - 86400000 * 5,
-    updatedAt: Date.now() - 7200000
-  }
-];
+import Pagination from './Pagination';
 
 export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boolean }) {
   const [view, setView] = React.useState<'list' | 'config'>('list');
   const [rules, setRules] = React.useState<AuditRule[]>(MOCK_RULES);
   const [search, setSearch] = React.useState('');
   const [businessTypeFilter, setBusinessTypeFilter] = React.useState<string>('all');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [isTypeDropdownOpen2, setIsTypeDropdownOpen2] = React.useState(false);
   const dropdownRef2 = React.useRef<HTMLDivElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [editingRule, setEditingRule] = React.useState<AuditRule | null>(null);
   const [showDeleteModal, setShowDeleteModal] = React.useState<string | null>(null);
   const [modelsViewerData, setModelsViewerData] = React.useState<any[] | null>(null);
@@ -182,6 +76,14 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
     return matchesSearch && matchesType;
   });
 
+  // Reset to first page when filtering
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, businessTypeFilter]);
+
+  const totalPages = Math.ceil(filteredRules.length / pageSize);
+  const paginatedRules = filteredRules.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const handleAddRule = () => {
     setEditingRule({
       id: '',
@@ -189,8 +91,16 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
       businessType: '通用业务',
       ruleType: 'general',
       description: '',
-      fixedCheckpoints: [],
-      configurableCheckpoints: [],
+      fixedCheckpoints: [{ name: '', description: '' }],
+      configurableCheckpoints: [{
+        id: 'cc_' + Date.now(),
+        name: '',
+        logicBlocks: [
+          { id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param', relation: '' }
+        ],
+        penaltyBasis: { source: '', chapter: '', content: '' }
+      }],
+      standardTables: [],
       outputData: '',
       apiUrl: '',
       status: 'enabled',
@@ -199,6 +109,46 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
       updatedAt: Date.now()
     });
     setView('config');
+  };
+
+  const handleImportRules = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const imported = JSON.parse(content);
+        
+        // Basic validation: check if it's an array or a single object
+        const newRules = Array.isArray(imported) ? imported : [imported];
+        
+        // Ensure required fields are present (very basic check)
+        const validRules = newRules.filter(r => r.name && r.businessType).map(r => ({
+          ...r,
+          id: 'rule-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now(),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          status: r.status || 'enabled',
+          creator: r.creator || '导入用户',
+          standardTables: r.standardTables || []
+        }));
+
+        if (validRules.length > 0) {
+          setRules([...rules, ...validRules]);
+          // Reset input
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          alert(`成功导入 ${validRules.length} 条规则`);
+        } else {
+          alert('未能识别有效的规则配置，请检查文件格式。');
+        }
+      } catch (err) {
+        console.error('Import failed:', err);
+        alert('解析文件失败，请确保文件是有效的 JSON 格式。');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleEditRule = (rule: AuditRule) => {
@@ -238,11 +188,18 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
 
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden", !hideHeader && "bg-white")}>
+      <input 
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportRules}
+        accept=".json"
+        className="hidden"
+      />
       {/* Header */}
       {!hideHeader && (
         <div className="px-8 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0">
           <div>
-            <h2 className="text-xl font-normal text-gray-900 tracking-tight">审计规则管理</h2>
+            <h2 className="text-xl font-normal text-gray-900 tracking-tight">审查点管理</h2>
             <p className="text-sm text-gray-500 mt-0.5">定义审计业务逻辑规则，支持多模型灵活配置</p>
           </div>
           <div className="flex items-center gap-3">
@@ -310,11 +267,18 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
               />
             </div>
             <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95 text-sm font-medium"
+            >
+              <Upload size={18} />
+              <span>导入规则</span>
+            </button>
+            <button 
               onClick={handleAddRule}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm"
             >
               <Plus size={18} />
-              <span className="font-medium">新增规则</span>
+              <span className="font-medium">新增审查点</span>
             </button>
           </div>
         </div>
@@ -388,11 +352,18 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
               />
             </div>
             <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95 text-sm font-medium"
+            >
+              <Upload size={18} />
+              <span>导入规则</span>
+            </button>
+            <button 
               onClick={handleAddRule}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
             >
               <Plus size={18} />
-              <span className="font-medium">新增规则</span>
+              <span className="font-medium">新增审查点</span>
             </button>
           </div>
         )}
@@ -400,17 +371,17 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-4 font-bold">规则名称</th>
-                <th className="px-6 py-4 font-bold">适用业务类型</th>
-                <th className="px-6 py-4 font-bold">规则类型</th>
-                <th className="px-6 py-4 font-bold">执行审查点</th>
-                <th className="px-6 py-4 font-bold">描述</th>
-                <th className="px-6 py-4 font-bold">状态</th>
-                <th className="px-6 py-4 font-bold">操作</th>
+                <th className="px-6 py-4 font-normal">审查点名称</th>
+                <th className="px-6 py-4 font-normal">适用业务类型</th>
+                <th className="px-6 py-4 font-normal">规则类型</th>
+                <th className="px-6 py-4 font-normal">执行审查点</th>
+                <th className="px-6 py-4 font-normal">描述</th>
+                <th className="px-6 py-4 font-normal">状态</th>
+                <th className="px-6 py-4 font-normal">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredRules.map((rule) => (
+              {paginatedRules.map((rule) => (
                 <tr key={rule.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div 
@@ -421,7 +392,7 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                         <ShieldCheck size={18} />
                       </div>
                       <div>
-                        <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{rule.name}</p>
+                        <p className="font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{rule.name}</p>
                         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                           {rule.creator}
                         </p>
@@ -434,10 +405,7 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={cn(
-                      "px-2 py-1 rounded text-xs font-bold tracking-wider border",
-                      rule.ruleType === 'general' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-orange-50 text-orange-600 border-orange-100"
-                    )}>
+                    <span className="text-gray-500 font-medium">
                       {rule.ruleType === 'general' ? '通用规则' : '专用规则'}
                     </span>
                   </td>
@@ -464,7 +432,9 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                       <div className="w-px h-3 bg-gray-200"></div>
 
                       {(() => {
-                        const relatedModels = MOCK_MODELS.filter(m => m.ruleIds?.includes(rule.id));
+                        const relatedModels = MOCK_MODELS.filter(m => 
+                          m.checkpoints?.some(cp => cp.ruleId === rule.id)
+                        );
                         if (relatedModels.length > 0) {
                           return (
                             <button 
@@ -489,15 +459,15 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                       </button>
                       <button 
                         onClick={() => {
-                          if (!MOCK_MODELS.some(m => m.ruleIds?.includes(rule.id))) {
+                          if (!MOCK_MODELS.some(m => m.checkpoints?.some(cp => cp.ruleId === rule.id))) {
                             setShowDeleteModal(rule.id);
                           }
                         }}
-                        disabled={MOCK_MODELS.some(m => m.ruleIds?.includes(rule.id))}
-                        title={MOCK_MODELS.some(m => m.ruleIds?.includes(rule.id)) ? "已被使用的规则不可删除" : "删除模型"}
+                        disabled={MOCK_MODELS.some(m => m.checkpoints?.some(cp => cp.ruleId === rule.id))}
+                        title={MOCK_MODELS.some(m => m.checkpoints?.some(cp => cp.ruleId === rule.id)) ? "已被使用的规则不可删除" : "删除模型"}
                         className={cn(
                           "p-2 rounded-lg transition-all",
-                          MOCK_MODELS.some(m => m.ruleIds?.includes(rule.id))
+                          MOCK_MODELS.some(m => m.checkpoints?.some(cp => cp.ruleId === rule.id))
                             ? "text-gray-300 cursor-not-allowed opacity-50"
                             : "text-gray-400 hover:text-red-600 hover:bg-red-50"
                         )}
@@ -510,6 +480,14 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
               ))}
             </tbody>
           </table>
+          
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredRules.length}
+            pageSize={pageSize}
+          />
           
           {filteredRules.length === 0 && (
             <div className="py-24 text-center">
@@ -592,6 +570,7 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
   };
 
   const addConfigurableCheckpoint = () => {
+    if (formData.configurableCheckpoints.length >= 1) return;
     setFormData({
       ...formData,
       configurableCheckpoints: [
@@ -623,7 +602,7 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
       {/* Header */}
-      <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="px-8 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
@@ -632,8 +611,8 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h2 className="text-xl font-normal text-gray-900 tracking-tight">{formData.id ? '修改规则' : '新增审计规则'}</h2>
-            <p className="text-sm text-gray-500 mt-1">配置规则的详细执行参数与信息</p>
+            <h2 className="text-xl font-normal text-gray-900 tracking-tight">{formData.id ? '修改审查点' : '新增审查点'}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">配置规则的详细执行参数与信息</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -651,12 +630,12 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
             </h3>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">规则名称</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">审查点名称</label>
                 <input 
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="请输入规则名称"
+                  placeholder="请输入审查点名称"
                   className="w-full h-12 bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                 />
               </div>
@@ -720,16 +699,18 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">法定固定审查点</label>
-                  <button onClick={() => setFormData({...formData, fixedCheckpoints: [...formData.fixedCheckpoints, { name: '', description: '' }]})} className="text-xs text-purple-600 font-medium hover:text-purple-700">+ 新增法定固定审查点</button>
+                  {formData.fixedCheckpoints.length === 0 && (
+                    <button 
+                      onClick={() => setFormData({...formData, fixedCheckpoints: [...formData.fixedCheckpoints, { name: '', description: '' }]})} 
+                      className="text-xs text-purple-600 font-medium hover:text-purple-700"
+                    >
+                      + 新增法定固定审查点
+                    </button>
+                  )}
                 </div>
                 <div className="space-y-3">
                   {formData.fixedCheckpoints.map((cp, idx) => (
                     <div key={idx} className="p-4 bg-gray-50 rounded-xl border border-gray-100 relative group">
-                      <button onClick={() => {
-                        const newCp = [...formData.fixedCheckpoints];
-                        newCp.splice(idx, 1);
-                        setFormData({...formData, fixedCheckpoints: newCp});
-                      }} className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-white transition-opacity opacity-0 group-hover:opacity-100"><Trash2 size={14}/></button>
                       <input className="w-full text-sm font-bold bg-transparent border-b border-dashed border-gray-300 pb-1 outline-none mb-2 focus:border-purple-500 placeholder-gray-400" placeholder="审查点名称" value={cp.name} onChange={e => {
                         const newCp = [...formData.fixedCheckpoints];
                         newCp[idx].name = e.target.value;
@@ -750,18 +731,13 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">可配置业务审查点</label>
-                  <button onClick={addConfigurableCheckpoint} className="text-xs text-orange-600 font-medium hover:text-orange-700 bg-orange-50 px-2 py-1 rounded">+ 新增可配置业务审查点</button>
+                  {formData.configurableCheckpoints.length === 0 && (
+                    <button onClick={addConfigurableCheckpoint} className="text-xs text-orange-600 font-medium hover:text-orange-700 bg-orange-50 px-2 py-1 rounded">+ 新增可配置业务审查点</button>
+                  )}
                 </div>
                 <div className="space-y-6">
                   {formData.configurableCheckpoints.map((cc, index) => (
                     <div key={cc.id} className="p-5 bg-orange-50/20 rounded-2xl border border-orange-100 relative group/cc">
-                      <button 
-                        onClick={() => removeConfigurableCheckpoint(index)}
-                        className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      
                       <div className="mb-4 pr-10">
                         <label className="text-xs text-orange-600 font-bold uppercase tracking-widest mb-1 block">审查点判断规则名称</label>
                         <input className="w-full text-sm font-bold bg-transparent border-b border-dashed border-gray-300 pb-1 mb-2 outline-none focus:border-orange-500 placeholder-gray-400" placeholder="例如: 合同违规判定" value={cc.name} onChange={e => updateConfigurableCheckpoint(index, { name: e.target.value })} />
@@ -889,7 +865,13 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
 
       {/* Save Button Fixed Bottom Bar */}
       <div className="border-t border-gray-100 bg-white p-6 sticky bottom-0 z-10 shrink-0">
-        <div className="max-w-5xl mx-auto flex justify-end">
+        <div className="max-w-5xl mx-auto flex justify-end gap-3">
+          <button 
+            onClick={onBack}
+            className="px-8 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-all active:scale-95"
+          >
+            取消
+          </button>
           <button 
             onClick={() => onSave({ ...formData, updatedAt: Date.now() })}
             className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
