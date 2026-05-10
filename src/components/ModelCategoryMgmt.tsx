@@ -90,9 +90,9 @@ export default function ModelCategoryMgmt() {
   const paginatedCategories = filteredCategories.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F9FAFB] overflow-hidden">
+    <div className="flex-1 flex flex-col bg-[#F9FAFB] overflow-y-auto relative">
       {/* Header */}
-      <div className="px-8 h-[90px] bg-white border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm z-10">
+      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-10">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">模型分类管理</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">统一管理系统的业务分类模型目录</p>
@@ -123,7 +123,7 @@ export default function ModelCategoryMgmt() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Table */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/20 overflow-hidden">
@@ -152,7 +152,7 @@ export default function ModelCategoryMgmt() {
                         <span className="text-sm text-gray-500 line-clamp-2 leading-relaxed">{item.description}</span>
                       </td>
                       <td className="px-8 py-5 text-center">
-                        <span className="inline-flex items-center justify-center px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-sm font-bold font-mono">
+                        <span className="inline-flex items-center justify-center px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-sm font-bold font-arial">
                           {item.modelCount}
                         </span>
                       </td>

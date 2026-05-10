@@ -118,7 +118,7 @@ export default function ChatInterface({
                 <h2 className="text-xl font-normal text-gray-900 tracking-tight mb-2">
                   审计AI大模型智能数据分析
                 </h2>
-                <p className="text-gray-500 text-xs mb-8">
+                <p className="text-gray-500 text-sm mb-8">
                   您可以输入自然语言描述审计需求，我会为您提供专业的分析和建议
                 </p>
                 
@@ -223,7 +223,7 @@ export default function ChatInterface({
                           className="absolute bottom-full left-0 mb-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-[0_15px_50px_-12px_rgba(0,0,0,0.15)] z-[100] overflow-hidden flex flex-col"
                         >
                           <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">选择审计模型</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">选择审计模型</span>
                             <Zap size={14} className="text-blue-500" />
                           </div>
 
@@ -238,7 +238,7 @@ export default function ChatInterface({
                                   setModelPage(1);
                                 }}
                                 placeholder="搜索审计模型..."
-                                className="w-full h-8 bg-gray-100 border-none rounded-lg pl-9 pr-3 text-[11px] focus:ring-1 focus:ring-blue-500/20"
+                                className="w-full h-8 bg-gray-100 border-none rounded-lg pl-9 pr-3 text-xs focus:ring-1 focus:ring-blue-500/20"
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
@@ -267,7 +267,7 @@ export default function ChatInterface({
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-xs truncate">{model.name}</p>
-                                  <p className="text-[9px] text-gray-400 uppercase tracking-tighter">{model.category}</p>
+                                  <p className="text-xs text-gray-400 uppercase tracking-tighter">{model.category}</p>
                                 </div>
                               </button>
                             ))}
@@ -291,7 +291,7 @@ export default function ChatInterface({
                               >
                                 <ChevronDown size={16} className="rotate-90" />
                               </button>
-                              <span className="text-[10px] font-bold text-gray-400">
+                              <span className="text-xs font-bold text-gray-400">
                                 {modelPage} / {totalModelPages}
                               </span>
                               <button 
@@ -327,7 +327,7 @@ export default function ChatInterface({
                           className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-[0_15px_50px_-12px_rgba(0,0,0,0.15)] z-[100] overflow-hidden flex flex-col"
                         >
                           <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">选择知识库</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">选择知识库</span>
                             <Database size={14} className="text-blue-500" />
                           </div>
                           
@@ -339,7 +339,7 @@ export default function ChatInterface({
                                 value={kbSearch}
                                 onChange={(e) => setKbSearch(e.target.value)}
                                 placeholder="搜索知识库..."
-                                className="w-full h-8 bg-gray-100 border-none rounded-lg pl-9 pr-3 text-[11px] focus:ring-1 focus:ring-blue-500/20"
+                                className="w-full h-8 bg-gray-100 border-none rounded-lg pl-9 pr-3 text-xs focus:ring-1 focus:ring-blue-500/20"
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
@@ -370,7 +370,7 @@ export default function ChatInterface({
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-xs truncate">{kb.name}</p>
-                                  <p className="text-[9px] text-gray-400 font-normal line-clamp-1">{kb.description}</p>
+                                  <p className="text-xs text-gray-400 font-normal line-clamp-1">{kb.description}</p>
                                 </div>
                               </button>
                             ))}
@@ -430,7 +430,7 @@ export default function ChatInterface({
               <span>AI 智能体的电脑</span>
             </div>
           </div>
-          <button className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors">
+          <button className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
             重新执行
           </button>
         </div>
@@ -457,7 +457,7 @@ export default function ChatInterface({
           >
             <Book size={14} />
             任务文件
-            <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-[9px] font-black text-gray-400 ml-1">3</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-xs font-black text-gray-400 ml-1">3</span>
             {activeTab === 'files' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />}
           </button>
           <button 
@@ -526,7 +526,7 @@ export default function ChatInterface({
                       <FileText size={18} className="text-gray-400 group-hover:text-blue-500" />
                       <span className="text-sm text-gray-700 font-medium">{file}</span>
                     </div>
-                    <button className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">查看详情</button>
+                    <button className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">查看详情</button>
                   </div>
                 ))}
               </motion.div>
@@ -571,10 +571,10 @@ export default function ChatInterface({
         <div className="h-10 border-t border-gray-100 bg-white px-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-bold text-gray-400">就绪</span>
-            <span className="text-[10px] text-gray-300 ml-2">1 个输出</span>
+            <span className="text-xs font-bold text-gray-400">就绪</span>
+            <span className="text-xs text-gray-300 ml-2">1 个输出</span>
           </div>
-          <span className="text-[10px] text-gray-400 font-mono">Step ID: step-18</span>
+          <span className="text-xs text-gray-400 font-mono">Step ID: step-18</span>
         </div>
       </div>
     </div>
@@ -602,7 +602,7 @@ function StepItem({ title, status, desc }: { title: string, status: 'completed' 
         <div className="flex items-center justify-between mb-1">
           <h5 className="text-xs font-bold text-gray-900 font-mono">{title}</h5>
           <span className={cn(
-            "px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest",
+            "px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-widest",
             status === 'completed' ? "bg-emerald-100 text-emerald-700 font-black" :
             status === 'error' ? "bg-red-100 text-red-700" :
             "bg-blue-100 text-blue-700"
@@ -610,7 +610,7 @@ function StepItem({ title, status, desc }: { title: string, status: 'completed' 
             {status === 'completed' ? '完成' : status === 'error' ? '错误' : '运行中'}
           </span>
         </div>
-        <p className="text-[11px] text-gray-500 leading-relaxed italic">{desc}</p>
+        <p className="text-xs text-gray-500 leading-relaxed italic">{desc}</p>
       </div>
     </div>
   );
@@ -623,7 +623,7 @@ function SuggestionItem({ icon, text, onClick }: { icon: React.ReactNode; text: 
       className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl text-left hover:border-blue-200 hover:bg-blue-50/30 transition-all group"
     >
       <div className="shrink-0 group-hover:scale-110 transition-transform">{icon}</div>
-      <span className="text-xs font-medium text-gray-700 truncate">{text}</span>
+      <span className="text-sm font-medium text-gray-700 truncate">{text}</span>
     </button>
   );
 }
@@ -697,8 +697,8 @@ function MessageItem({ message }: { message: Message }) {
         {message.citations && message.citations.length > 0 && (
           <div className={cn("flex flex-wrap gap-2 mt-2", isUser ? "justify-end" : "justify-start")}>
             {message.citations.map((cite, i) => (
-              <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-blue-50/50 border border-blue-100 rounded-md text-[10px] text-blue-600 font-medium">
-                <span className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center text-[8px]">{i + 1}</span>
+              <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-blue-50/50 border border-blue-100 rounded-md text-xs text-blue-600 font-medium">
+                <span className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center text-xs">{i + 1}</span>
                 <span className="truncate max-w-[150px]">{cite.title}</span>
               </div>
             ))}

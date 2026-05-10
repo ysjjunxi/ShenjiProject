@@ -526,10 +526,12 @@ export default function DocumentAnalysis() {
   const [docs, setDocs] = React.useState<AnalyzableDocument[]>(SAMPLE_DOCS);
   const [selectedDocs, setSelectedDocs] = React.useState<string[]>(['doc-bid']);
   const [selectedDocId, setSelectedDocId] = React.useState<string | null>(null);
+  const [chatDocId, setChatDocId] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isUploading, setIsUploading] = React.useState(false);
   const [showKbModal, setShowKbModal] = React.useState(false);
   const [showParseModal, setShowParseModal] = React.useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = React.useState<string | null>(null);
   
   // Comparison process state
   const [comparisonStatus, setComparisonStatus] = React.useState<'idle' | 'comparing' | 'completed'>('idle');
@@ -740,11 +742,11 @@ export default function DocumentAnalysis() {
 
   const getStatusBadge = (status: AnalyzableDocument['status']) => {
     switch(status) {
-      case 'completed': return <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] flex items-center gap-1"><CheckCircle2 size={10} />分析完成</span>;
-      case 'parsing': return <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] flex items-center gap-1 animate-pulse"><Clock size={10} />分析中</span>;
-      case 'failed': return <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] flex items-center gap-1"><AlertCircle size={10} />解析失败</span>;
-      case 'pending': return <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[10px] flex items-center gap-1"><AlertCircle size={10} />待分析</span>;
-      default: return <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px] flex items-center gap-1"><Clock size={10} />待分析</span>;
+      case 'completed': return <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-sm flex items-center gap-1"><CheckCircle2 size={12} />分析完成</span>;
+      case 'parsing': return <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-sm flex items-center gap-1 animate-pulse"><Clock size={12} />分析中</span>;
+      case 'failed': return <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-sm flex items-center gap-1"><AlertCircle size={12} />解析失败</span>;
+      case 'pending': return <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-sm flex items-center gap-1"><AlertCircle size={12} />待分析</span>;
+      default: return <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-sm flex items-center gap-1"><Clock size={12} />待分析</span>;
     }
   };
 
@@ -782,7 +784,7 @@ export default function DocumentAnalysis() {
   return (
     <div className="h-full flex flex-col bg-[#F8FAFC]">
       {/* Module Header */}
-      <div className="bg-white px-6 py-4 flex items-center justify-between border-b border-gray-100">
+      <div className="bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-10">
         <div>
           <h2 className="text-lg font-normal text-xl tracking-tight text-gray-900 flex items-center gap-2">
             <FileSearch size={22} className="text-blue-600" />
@@ -895,15 +897,15 @@ export default function DocumentAnalysis() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-[11px] text-gray-500">
+                        <td className="px-4 py-4 text-sm text-gray-500">
                           {(doc.size / 1024 / 1024).toFixed(2)} MB
                         </td>
                         <td className="px-4 py-4">
-                          <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-medium">
+                          <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 text-sm font-medium">
                             {doc.source === 'library' ? '审计资料库' : doc.source === 'personal' ? '个人知识库' : '本地上传'}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-[11px] text-gray-500 font-bold">
+                        <td className="px-4 py-4 text-sm text-gray-500 font-bold">
                           {(() => {
                             switch(doc.suggestedModel) {
                               case 'invoice': return '发票';
@@ -928,16 +930,29 @@ export default function DocumentAnalysis() {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-1 transition-opacity">
+                            {doc.status === 'completed' && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setChatDocId(doc.id);
+                                }}
+                                title="文档对话"
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                              >
+                                <MessageSquare size={16} />
+                              </button>
+                            )}
                             {doc.status === 'completed' && (
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleViewResult(doc.id);
                                 }}
-                                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-all shadow-sm"
+                                title="查看结果"
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                               >
-                                查看结果
+                                <FileSearch size={16} />
                               </button>
                             )}
                             {doc.status === 'pending' && (
@@ -946,12 +961,19 @@ export default function DocumentAnalysis() {
                                   e.stopPropagation();
                                   openParseModal(doc.id, doc.name);
                                 }}
-                                className="px-3 py-1 bg-orange-50 text-orange-600 rounded-lg text-[10px] font-bold hover:bg-orange-100 transition-all shadow-sm"
+                                title="分析文档"
+                                className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
                               >
-                                分析文档
+                                <Zap size={16} />
                               </button>
                             )}
-                            <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowConfirmDelete(doc.id);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            >
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -1001,15 +1023,15 @@ export default function DocumentAnalysis() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] text-blue-600 font-black uppercase tracking-[0.2em] bg-blue-50 px-1.5 py-0.5 rounded">分析报告</span>
+                        <span className="text-xs text-blue-600 font-black uppercase tracking-[0.2em] bg-blue-50 px-1.5 py-0.5 rounded">分析报告</span>
                         <h3 className="text-sm font-normal text-lg tracking-tight text-gray-400 tracking-tight">文档解析结果</h3>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">当前文档:</span>
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">当前文档:</span>
                         <select 
                           value={selectedDocId || ''} 
                           onChange={(e) => setSelectedDocId(e.target.value)}
-                          className="bg-transparent text-[11px] font-black text-gray-900 focus:outline-none cursor-pointer border-none p-0 hover:text-blue-600 transition-colors"
+                          className="bg-transparent text-xs font-black text-gray-900 focus:outline-none cursor-pointer border-none p-0 hover:text-blue-600 transition-colors"
                         >
                           {docs.filter(d => d.status === 'completed').map(d => (
                             <option key={d.id} value={d.id}>{d.name}</option>
@@ -1031,7 +1053,7 @@ export default function DocumentAnalysis() {
                   <div className="col-span-12 lg:col-span-2 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
                     <div className="flex items-center gap-3 mb-4 px-2">
                        <Filter size={14} className="text-gray-400" />
-                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">提取目录</h4>
+                       <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">提取目录</h4>
                     </div>
                     {result.categories.map((cat: any, i: number) => (
                       <button 
@@ -1042,7 +1064,7 @@ export default function DocumentAnalysis() {
                           setActiveCategoryIdx(i);
                         }}
                         className={cn(
-                          "w-full text-left px-4 py-3 rounded-2xl text-[11px] font-black transition-all hover:bg-white hover:shadow-sm border flex items-center justify-between group",
+                          "w-full text-left px-4 py-3 rounded-2xl text-xs font-black transition-all hover:bg-white hover:shadow-sm border flex items-center justify-between group",
                           activeCategoryIdx === i 
                             ? "bg-white border-blue-100 shadow-sm" 
                             : "border-transparent hover:border-gray-100"
@@ -1080,10 +1102,10 @@ export default function DocumentAnalysis() {
                         <div className="flex items-center justify-between px-2 pt-2">
                           <div className="flex items-center gap-2">
                             <h4 className="text-xs font-black text-gray-900 uppercase tracking-[0.1em]">{category.title}</h4>
-                            <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full font-bold">{category.fields.length}</span>
+                            <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full font-bold">{category.fields.length}</span>
                           </div>
                           {catIdx === 0 && (
-                            <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400">
+                            <div className="flex items-center gap-4 text-xs font-bold text-gray-400">
                               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-red-500 rounded-full" /> 疑点</div>
                             </div>
                           )}
@@ -1110,7 +1132,7 @@ export default function DocumentAnalysis() {
                                 )}
                               >
                                 <div className="flex items-center justify-between mb-4">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{field.label}</span>
+                                  <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{field.label}</span>
                                   <div className="flex items-center gap-2">
                                     {(editedSimilarities[globalIdx] !== undefined || field.similarity !== undefined) && !isAudited && (
                                       <div className="flex items-center">
@@ -1118,7 +1140,7 @@ export default function DocumentAnalysis() {
                                           <div className="flex items-center gap-1 bg-white border border-blue-200 rounded-full pl-2 pr-1 py-0.5 shadow-sm">
                                             <input 
                                               type="text"
-                                              className="w-8 text-[9px] font-bold text-blue-600 focus:outline-none bg-transparent text-center"
+                                              className="w-8 text-xs font-bold text-blue-600 focus:outline-none bg-transparent text-center"
                                               value={tempSimilarity}
                                               onChange={(e) => {
                                                 const val = e.target.value.replace(/[^\d]/g, '');
@@ -1139,7 +1161,7 @@ export default function DocumentAnalysis() {
                                                 }
                                               }}
                                             />
-                                            <span className="text-[9px] font-bold text-blue-600 mr-1">%</span>
+                                            <span className="text-xs font-bold text-blue-600 mr-1">%</span>
                                             <div className="flex items-center gap-0.5">
                                               <button 
                                                 onClick={(e) => {
@@ -1175,7 +1197,7 @@ export default function DocumentAnalysis() {
                                               }
                                             }}
                                             className={cn(
-                                              "text-[9px] px-2 py-0.5 rounded-full font-bold transition-all",
+                                              "text-xs px-2 py-0.5 rounded-full font-bold transition-all",
                                               (editedSimilarities[globalIdx] ?? field.similarity) > 0.9 ? "bg-blue-50 text-blue-600" : 
                                               field.status === 'error' ? "bg-red-50 text-red-600" :
                                               "bg-orange-50 text-orange-600",
@@ -1188,7 +1210,7 @@ export default function DocumentAnalysis() {
                                       </div>
                                     )}
                                     {isAudited && (
-                                      <span className="flex items-center gap-1 text-green-600 text-[10px] font-bold">
+                                      <span className="flex items-center gap-1 text-green-600 text-xs font-bold">
                                         <CheckCircle2 size={12} />
                                         已审核
                                       </span>
@@ -1264,28 +1286,13 @@ export default function DocumentAnalysis() {
                                     )}
 
                                     {needsAudit && !isAudited && (
-                                      <p className="text-[10px] font-bold text-gray-400 mt-2 flex items-center gap-1.5 italic">
+                                      <p className="text-xs font-bold text-gray-400 mt-2 flex items-center gap-1.5 italic">
                                         <AlertCircle size={10} className={field.status === 'warning' ? "text-yellow-500" : "text-red-500"} />
                                         {field.status === 'warning' ? '建议核查：提取逻辑置信度偏低' : '疑点：检测到法规条文冲突'}
                                       </p>
                                     )}
                                   </div>
 
-                                  {needsAudit && (
-                                    <button 
-                                      onClick={() => handleToggleAudit(selectedDocId || 'default', globalIdx as any)}
-                                      className={cn(
-                                        "px-4 py-1.5 rounded-xl text-[10px] font-black transition-all active:scale-95 flex items-center gap-1",
-                                        isAudited 
-                                          ? "bg-green-50 border border-green-200 text-green-600 hover:bg-green-100" 
-                                          : "bg-white border shadow-sm",
-                                        !isAudited && field.status === 'warning' && "border-yellow-200 text-yellow-600 hover:bg-yellow-50",
-                                        !isAudited && field.status === 'error' && "border-red-200 text-red-600 hover:bg-red-50"
-                                      )}
-                                    >
-                                      {isAudited ? <><Check size={12} />已审核</> : '立即核对'}
-                                    </button>
-                                  )}
                                 </div>
                               </div>
                             );
@@ -1305,17 +1312,17 @@ export default function DocumentAnalysis() {
                                      <FileSearch size={20} />
                                   </div>
                                   <div className="min-w-0">
-                                     <p className="text-[11px] font-black text-gray-900 truncate max-w-[200px]">
+                                     <p className="text-xs font-black text-gray-900 truncate max-w-[200px]">
                                        {docs.find(d => d.id === selectedDocId)?.name}
                                      </p>
-                                     <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">原文预览内容</p>
+                                     <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">原文预览内容</p>
                                   </div>
                                </div>
                             </div>
-                            <div className="space-y-4 font-serif text-[11px] text-gray-600 leading-relaxed">
+                            <div className="space-y-4 font-serif text-xs text-gray-600 leading-relaxed">
                                <p>本项目投标要求：投标人具备电子与智能化工程专业承包一级资质。技术方案核心指标：边缘端算法响应延迟需≤50ms，且支持在极端天气条件（大雾、暴雪）下的高精度识别...</p>
                                <p>系统架构设计应满足高可用性，前端采集设备要求支持IP67级防水防尘...</p>
-                               <p className="not-italic text-[10px] text-gray-300 select-none text-center pt-4 border-t border-gray-50">-- 文档加载中 --</p>
+                               <p className="not-italic text-xs text-gray-300 select-none text-center pt-4 border-t border-gray-50">-- 文档加载中 --</p>
                             </div>
                          </div>
                       ) : (
@@ -1325,7 +1332,7 @@ export default function DocumentAnalysis() {
                           </div>
                           <div className="text-center">
                              <p className="text-xs font-black tracking-widest uppercase text-gray-400">原文预览</p>
-                             <p className="text-[9px] font-bold text-gray-300 mt-1 uppercase">请选择上方文档查看详情</p>
+                             <p className="text-xs font-bold text-gray-300 mt-1 uppercase">请选择上方文档查看详情</p>
                           </div>
                         </div>
                       )}
@@ -1358,8 +1365,8 @@ export default function DocumentAnalysis() {
                                <FileText size={16} />
                              </div>
                              <div className="max-w-[120px]">
-                               <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">基准文件 (A)</p>
-                               <p className="text-[11px] font-black text-gray-900 truncate">{docs.find(d => d.id === comparisonDocs.a)?.name || '未选择'}</p>
+                               <p className="text-xs font-black text-gray-400 uppercase tracking-tighter">基准文件 (A)</p>
+                               <p className="text-xs font-black text-gray-900 truncate">{docs.find(d => d.id === comparisonDocs.a)?.name || '未选择'}</p>
                              </div>
                            </div>
                            <div className="text-gray-300">
@@ -1370,13 +1377,13 @@ export default function DocumentAnalysis() {
                                <FileText size={16} />
                              </div>
                              <div className="max-w-[120px]">
-                               <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">比对文件 (B)</p>
-                               <p className="text-[11px] font-black text-gray-900 truncate">{docs.find(d => d.id === comparisonDocs.b)?.name || '未选择'}</p>
+                               <p className="text-xs font-black text-gray-400 uppercase tracking-tighter">比对文件 (B)</p>
+                               <p className="text-xs font-black text-gray-900 truncate">{docs.find(d => d.id === comparisonDocs.b)?.name || '未选择'}</p>
                              </div>
                            </div>
                            <div className="ml-4 flex flex-wrap items-center gap-2">
                              {COMPARISON_CONFIG.filter(group => group.options.some(opt => comparisonOptions.includes(opt.id))).map(group => (
-                               <span key={group.id} className="px-2 py-0.5 bg-gray-100 rounded-md text-[8px] font-black text-gray-500 uppercase tracking-tighter">
+                               <span key={group.id} className="px-2 py-0.5 bg-gray-100 rounded-md text-xs font-black text-gray-500 uppercase tracking-tighter">
                                  {group.label}
                                </span>
                              ))}
@@ -1386,7 +1393,7 @@ export default function DocumentAnalysis() {
                           onClick={() => {
                             containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
-                          className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black hover:bg-blue-100 transition-colors"
+                          className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black hover:bg-blue-100 transition-colors"
                         >
                           修改配置
                         </button>
@@ -1406,7 +1413,7 @@ export default function DocumentAnalysis() {
                         {comparisonStatus === 'completed' && (
                           <button 
                             onClick={handleResetComparison}
-                            className="px-4 py-2 bg-gray-50 border border-gray-100 text-gray-600 rounded-xl text-[10px] font-black hover:bg-gray-100 transition-all flex items-center gap-2"
+                            className="px-4 py-2 bg-gray-50 border border-gray-100 text-gray-600 rounded-xl text-xs font-black hover:bg-gray-100 transition-all flex items-center gap-2"
                           >
                             <Plus className="rotate-45" size={14} />
                             重新选择比对
@@ -1432,7 +1439,7 @@ export default function DocumentAnalysis() {
                             {comparisonDocs.a ? <FileCheck2 size={24} /> : <Plus size={24} />}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">基准标书 (A)</p>
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">基准标书 (A)</p>
                             <p className="text-sm font-black text-gray-900 truncate tracking-tight pr-4">
                               {docs.find(d => d.id === comparisonDocs.a)?.name || '未选择标书'}
                             </p>
@@ -1460,7 +1467,7 @@ export default function DocumentAnalysis() {
                             {comparisonDocs.b ? <FileCheck2 size={24} /> : <Plus size={24} />}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">比对标书 (B)</p>
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">比对标书 (B)</p>
                             <p className="text-sm font-black text-gray-900 truncate tracking-tight pr-4">
                               {docs.find(d => d.id === comparisonDocs.b)?.name || '未选择比对标书'}
                             </p>
@@ -1534,7 +1541,7 @@ export default function DocumentAnalysis() {
                         <div className="pt-4 border-t border-gray-50 flex flex-col items-center gap-3">
                           <div className="w-full max-w-md space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] animate-pulse">深度分析比错中... {comparisonProgress}%</span>
+                              <span className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] animate-pulse">深度分析比错中... {comparisonProgress}%</span>
                             </div>
                             <div className="h-2 w-full bg-blue-50 rounded-full overflow-hidden border border-blue-100 p-0.5">
                               <motion.div 
@@ -1581,7 +1588,7 @@ export default function DocumentAnalysis() {
                                 setActiveReportSection(sec.id);
                               }}
                               className={cn(
-                                "px-4 py-1.5 rounded-lg text-[10px] font-black transition-all",
+                                "px-4 py-1.5 rounded-lg text-xs font-black transition-all",
                                 activeReportSection === sec.id 
                                   ? "bg-white text-blue-600 shadow-sm" 
                                   : "text-gray-400 hover:text-gray-600"
@@ -1593,7 +1600,7 @@ export default function DocumentAnalysis() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 relative group/export">
-                        <button className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-black hover:bg-black transition-all shadow-lg shadow-gray-900/10">
+                        <button className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-black hover:bg-black transition-all shadow-lg shadow-gray-900/10">
                           <Download size={14} />
                           导出比对报告
                           <ChevronDown size={14} className="ml-1 opacity-50" />
@@ -1608,8 +1615,8 @@ export default function DocumentAnalysis() {
                                    <FileText size={16} />
                                  </div>
                                  <div className="min-w-0">
-                                   <p className="text-[11px] font-black text-gray-900">Word 格式 (.docx)</p>
-                                   <p className="text-[8px] text-gray-400 font-bold">标准审计文档及报表</p>
+                                   <p className="text-xs font-black text-gray-900">Word 格式 (.docx)</p>
+                                   <p className="text-xs text-gray-400 font-bold">标准审计文档及报表</p>
                                  </div>
                                </div>
                                <ArrowRight size={14} className="text-gray-300 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all shrink-0" />
@@ -1620,8 +1627,8 @@ export default function DocumentAnalysis() {
                                    <FileCode size={16} />
                                  </div>
                                  <div className="min-w-0">
-                                   <p className="text-[11px] font-black text-gray-900">PDF 格式 (.pdf)</p>
-                                   <p className="text-[8px] text-gray-400 font-bold">不可篡改的电子存档版本</p>
+                                   <p className="text-xs font-black text-gray-900">PDF 格式 (.pdf)</p>
+                                   <p className="text-xs text-gray-400 font-bold">不可篡改的电子存档版本</p>
                                  </div>
                                </div>
                                <ArrowRight size={14} className="text-gray-300 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all shrink-0" />
@@ -1648,11 +1655,11 @@ export default function DocumentAnalysis() {
                                 <div>
                                   <h2 className="text-xl font-normal text-gray-900 tracking-tight tracking-tight">围串标深度比对报告</h2>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] font-black text-blue-600 px-2 py-0.5 bg-blue-50 rounded-lg border border-blue-100">
+                                    <span className="text-xs font-black text-blue-600 px-2 py-0.5 bg-blue-50 rounded-lg border border-blue-100">
                                       {docs.find(d => d.id === comparisonDocs.a)?.name || '未定义标书'}
                                     </span>
                                     <ArrowRight size={10} className="text-gray-300" />
-                                    <span className="text-[10px] font-black text-purple-600 px-2 py-0.5 bg-purple-50 rounded-lg border border-purple-100">
+                                    <span className="text-xs font-black text-purple-600 px-2 py-0.5 bg-purple-50 rounded-lg border border-purple-100">
                                       {docs.find(d => d.id === comparisonDocs.b)?.name || '未定义标书'}
                                     </span>
                                   </div>
@@ -1667,31 +1674,31 @@ export default function DocumentAnalysis() {
                             <div className="grid grid-cols-1 gap-2">
                                <div className="flex items-center gap-6 py-4 px-6 bg-gray-50/50 rounded-2xl border border-gray-100 overflow-x-auto scrollbar-hide" style={{ fontFamily: 'Arial, "Microsoft YaHei", sans-serif' }}>
                                  <div className="flex items-center gap-2 shrink-0">
-                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">合规评分</span>
+                                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">合规评分</span>
                                    <span className="text-lg text-gray-800 text-orange-600 tracking-tighter">72.5</span>
                                  </div>
                                  <div className="w-px h-4 bg-gray-200 shrink-0" />
                                  <div className="flex items-center gap-2 shrink-0">
-                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">异常项统计</span>
-                                   <span className="text-lg text-gray-800 text-red-600 tracking-tighter">12 <span className="text-[10px] opacity-60">项</span></span>
+                                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">异常项统计</span>
+                                   <span className="text-lg text-gray-800 text-red-600 tracking-tighter">12 <span className="text-xs opacity-60">项</span></span>
                                  </div>
                                  <div className="w-px h-4 bg-gray-200 shrink-0" />
                                  <div className="flex items-center gap-2 shrink-0">
-                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">高风险</span>
-                                   <span className="text-lg text-red-600 tracking-tighter">3 <span className="text-[10px] opacity-60">项</span></span>
+                                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">高风险</span>
+                                   <span className="text-lg text-red-600 tracking-tighter">3 <span className="text-xs opacity-60">项</span></span>
                                  </div>
                                  <div className="w-px h-4 bg-gray-200 shrink-0" />
                                  <div className="flex items-center gap-2 shrink-0">
-                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">中风险</span>
-                                   <span className="text-lg text-yellow-600 tracking-tighter">5 <span className="text-[10px] opacity-60">项</span></span>
+                                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">中风险</span>
+                                   <span className="text-lg text-yellow-600 tracking-tighter">5 <span className="text-xs opacity-60">项</span></span>
                                  </div>
                                  <div className="w-px h-4 bg-gray-200 shrink-0" />
                                  <div className="flex items-center gap-2 shrink-0">
-                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">低风险</span>
-                                   <span className="text-lg text-gray-500 tracking-tighter">4 <span className="text-[10px] opacity-60">项</span></span>
+                                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">低风险</span>
+                                   <span className="text-lg text-gray-500 tracking-tighter">4 <span className="text-xs opacity-60">项</span></span>
                                  </div>
                                </div>
-                               <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] px-2 italic">由 AI 审计引擎于 2024.03.20 14:05:12 生成 · 安全多维校验已完成</p>
+                               <p className="text-xs text-gray-400 uppercase tracking-[0.2em] px-2 italic">由 AI 审计引擎于 2024.03.20 14:05:12 生成 · 安全多维校验已完成</p>
                             </div>
                           </div>
                         </div>
@@ -1710,9 +1717,9 @@ export default function DocumentAnalysis() {
                               <div key={idx} className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-all gap-4">
                                  <div className="space-y-4">
                                    <div className="flex items-center justify-between">
-                                      <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">{meta.item}</p>
+                                      <p className="text-xs font-black text-gray-900 uppercase tracking-tight">{meta.item}</p>
                                       <div className={cn(
-                                        "p-1 px-2.5 rounded-lg text-[9px] font-black tracking-tight",
+                                        "p-1 px-2.5 rounded-lg text-xs font-black tracking-tight",
                                         meta.status === 'error' ? "bg-red-100 text-red-600" : 
                                         meta.status === 'warning' ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"
                                       )}>
@@ -1721,16 +1728,16 @@ export default function DocumentAnalysis() {
                                    </div>
                                    <div className="grid grid-cols-2 gap-3">
                                       <div className="flex flex-col gap-1 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <span className="text-[8px] font-black text-gray-400 uppercase">文档 A</span>
-                                        <span className="text-[10px] font-bold text-gray-600 truncate">{meta.docA}</span>
+                                        <span className="text-xs font-black text-gray-400 uppercase">文档 A</span>
+                                        <span className="text-xs font-bold text-gray-600 truncate">{meta.docA}</span>
                                       </div>
                                       <div className="flex flex-col gap-1 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                                        <span className="text-[8px] font-black text-blue-400 uppercase">文档 B</span>
-                                        <span className="text-[10px] font-bold text-gray-800 truncate">{meta.docB}</span>
+                                        <span className="text-xs font-black text-blue-400 uppercase">文档 B</span>
+                                        <span className="text-xs font-bold text-gray-800 truncate">{meta.docB}</span>
                                       </div>
                                    </div>
                                    <div className="p-3 bg-gray-50/30 rounded-xl border border-dashed border-gray-200">
-                                      <p className="text-[10px] text-gray-500 font-bold leading-relaxed flex items-center gap-2">
+                                      <p className="text-xs text-gray-500 font-bold leading-relaxed flex items-center gap-2">
                                         <Search size={10} className="text-gray-400" />
                                         {meta.detail}
                                       </p>
@@ -1753,10 +1760,10 @@ export default function DocumentAnalysis() {
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">判定维度</th>
-                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">算法引擎</th>
-                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">比对测算值</th>
-                                <th className="px-8 py-4 text-[10px] font-normal text-gray-400 uppercase tracking-widest w-1/4">风险判定</th>
+                                <th className="px-8 py-4 text-xs font-normal text-gray-400 uppercase tracking-widest w-1/4">判定维度</th>
+                                <th className="px-8 py-4 text-xs font-normal text-gray-400 uppercase tracking-widest w-1/4">算法引擎</th>
+                                <th className="px-8 py-4 text-xs font-normal text-gray-400 uppercase tracking-widest w-1/4">比对测算值</th>
+                                <th className="px-8 py-4 text-xs font-normal text-gray-400 uppercase tracking-widest w-1/4">风险判定</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -1766,7 +1773,7 @@ export default function DocumentAnalysis() {
                                     <p className="text-sm font-normal text-gray-900">{item.item}</p>
                                   </td>
                                   <td className="px-8 py-6">
-                                    <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase">{item.metric}</span>
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs font-black uppercase">{item.metric}</span>
                                   </td>
                                   <td className="px-8 py-6">
                                     <p className="text-sm font-mono font-black text-gray-900">{item.value}</p>
@@ -1774,13 +1781,13 @@ export default function DocumentAnalysis() {
                                   <td className="px-8 py-6">
                                     <div className="flex flex-col gap-1">
                                       <div className={cn(
-                                        "w-fit px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+                                        "w-fit px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest",
                                         item.status === 'critical' ? "bg-red-600 text-white" : 
                                         item.status === 'warning' ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"
                                       )}>
                                         {item.status === 'critical' ? '极高匹配' : item.status === 'warning' ? '疑似雷同' : '基本合规'}
                                       </div>
-                                      <p className="text-[10px] text-gray-400 font-normal">{item.desc}</p>
+                                      <p className="text-xs text-gray-400 font-normal">{item.desc}</p>
                                     </div>
                                   </td>
                                 </tr>
@@ -1825,22 +1832,22 @@ export default function DocumentAnalysis() {
                                         ))}
                                      </svg>
                                      <div className="absolute top-10 right-10 p-6 bg-white/90 backdrop-blur shadow-xl border border-gray-100 rounded-3xl">
-                                        <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] mb-2 font-black italic">! 高频等比例报价拟合</p>
+                                        <p className="text-xs font-black text-red-500 uppercase tracking-[0.2em] mb-2 font-black italic">! 高频等比例报价拟合</p>
                                         <p className="text-xl font-normal text-gray-900 tracking-tight font-mono tracking-tighter">R² = 0.9997</p>
-                                        <p className="text-[10px] text-gray-400 font-bold mt-1">这意味着两份标书价格具有极强的数学相关性</p>
+                                        <p className="text-xs text-gray-400 font-bold mt-1">这意味着两份标书价格具有极强的数学相关性</p>
                                      </div>
                                   </div>
                                </div>
                             </div>
                             <div className="col-span-4 flex flex-col justify-center space-y-6">
                               <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
-                                <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">异常判定逻辑</h5>
+                                <h5 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4">异常判定逻辑</h5>
                                 <p className="text-xs text-gray-600 font-bold leading-relaxed">
                                   系统检测到文档 B 的分项报价在 95% 以上的科目中均呈现出文档 A 报价的 105.00% (浮动 ±0.01%)。
                                 </p>
                               </div>
                               <div className="p-6 bg-red-50/50 rounded-3xl border border-red-100">
-                                <h5 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-4">审计建议</h5>
+                                <h5 className="text-xs font-black text-red-600 uppercase tracking-widest mb-4">审计建议</h5>
                                 <p className="text-xs text-gray-600 font-bold leading-relaxed">
                                   建议对投标方的历史参标记录进行关联比对，核查是否存在代编行为。
                                 </p>
@@ -1852,15 +1859,15 @@ export default function DocumentAnalysis() {
                           <div className="pt-8 border-t border-gray-100">
                              <div className="flex items-center gap-2 mb-4">
                                <Bot size={14} className="text-blue-600" />
-                               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">分项及缺漏项耦合分析</span>
+                               <span className="text-xs font-black text-gray-400 uppercase tracking-widest">分项及缺漏项耦合分析</span>
                              </div>
                              <div className="grid grid-cols-2 gap-6">
                                {SAMPLE_COMPARISON.collusionAnomalyClues.pricingAnomaly.map((item: any, idx: number) => (
                                  <div key={idx} className="p-6 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-blue-200 transition-all">
                                    <div>
-                                     <p className="text-[9px] font-black text-gray-400 uppercase mb-1">{item.item}</p>
+                                     <p className="text-xs font-black text-gray-400 uppercase mb-1">{item.item}</p>
                                      <p className="text-sm font-black text-gray-900">{item.value}</p>
-                                     <p className="text-[10px] text-gray-500 font-bold mt-1 italic">{item.reason}</p>
+                                     <p className="text-xs text-gray-500 font-bold mt-1 italic">{item.reason}</p>
                                    </div>
                                    <div className="w-10 h-10 rounded-full bg-red-100/50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
                                       <ShieldAlert size={18} />
@@ -1883,7 +1890,7 @@ export default function DocumentAnalysis() {
                         <div className="grid grid-cols-12 gap-6">
                           <div className="col-span-4 bg-white rounded-[40px] border border-gray-100 shadow-sm p-10 flex flex-col items-center justify-center relative overflow-hidden h-[400px]">
                             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-red-50/50 to-transparent pointer-events-none" />
-                            <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mb-10 relative z-10">综合重合率</span>
+                            <span className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-10 relative z-10">综合重合率</span>
                             <div className="relative mb-10 scale-110">
                               <svg className="w-48 h-48 transform -rotate-90">
                                 <circle cx="96" cy="96" r="88" fill="transparent" stroke="#F8FAFC" strokeWidth="12"/>
@@ -1894,41 +1901,41 @@ export default function DocumentAnalysis() {
                               </svg>
                               <div className="absolute inset-0 flex flex-col items-center justify-center">
                                 <span className="text-5xl font-black text-gray-900 font-mono tracking-tighter">15.5<span className="text-2xl">%</span></span>
-                                <div className="px-3 py-1 bg-red-600 text-white rounded-lg text-[9px] font-black uppercase mt-2 shadow-lg shadow-red-500/20 tracking-wider">高危风险</div>
+                                <div className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-black uppercase mt-2 shadow-lg shadow-red-500/20 tracking-wider">高危风险</div>
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-6 w-full border-t border-gray-100 pt-6">
                                <div className="text-center">
-                                  <p className="text-[9px] font-black text-gray-400 uppercase">重复片段数</p>
+                                  <p className="text-xs font-black text-gray-400 uppercase">重复片段数</p>
                                   <p className="text-lg font-black text-gray-900">{SAMPLE_COMPARISON.duplicateFragments.length} 处</p>
                                </div>
                                <div className="text-center">
-                                  <p className="text-[9px] font-black text-gray-400 uppercase">查重总余量</p>
+                                  <p className="text-xs font-black text-gray-400 uppercase">查重总余量</p>
                                   <p className="text-lg font-black text-gray-900">84.5%</p>
                                </div>
                             </div>
                           </div>
                           <div className="col-span-8 bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[400px]">
                             <div className="p-6 border-b border-gray-100 bg-gray-50/30">
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] font-black">查重详情列表</span>
+                              <span className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] font-black">查重详情列表</span>
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                                 {SAMPLE_COMPARISON.duplicateFragments.map((frag: any, idx: number) => (
                                  <div key={idx} className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 relative group/ev hover:bg-white hover:border-blue-200 transition-all">
                                     <div className="absolute top-4 right-4">
-                                      <div className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-200">100% 匹配</div>
+                                      <div className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-black uppercase tracking-widest border border-red-200">100% 匹配</div>
                                     </div>
                                     <div className="flex items-center gap-2 mb-2">
                                        <span className="w-1.5 h-4 bg-red-500 rounded-full" />
                                        <div className="flex items-center gap-3">
                                           <h4 className="text-sm font-black text-gray-900">{idx === 2 ? '内容语法/表达异常检测' : idx === 3 ? '冷僻错别字一致性检测' : `重复片段 #${idx + 1}`}</h4>
-                                          {idx >= 2 && <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[8px] font-black uppercase">语义特征碰撞</span>}
+                                          {idx >= 2 && <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-xs font-black uppercase">语义特征碰撞</span>}
                                        </div>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 font-bold mb-2 italic">来源: {frag.sourceDocName} · 位置: {frag.location}</p>
+                                    <p className="text-xs text-gray-400 font-bold mb-2 italic">来源: {frag.sourceDocName} · 位置: {frag.location}</p>
                                     <div className="bg-white p-3 rounded-xl border border-dashed border-gray-200 relative">
                                        <div className="absolute top-2 left-3 text-[14px] font-serif text-gray-300 opacity-50 font-black italic">“</div>
-                                       <p className="text-[11px] text-gray-600 leading-snug px-4 italic font-bold">
+                                       <p className="text-xs text-gray-600 leading-snug px-4 italic font-bold">
                                          {frag.sourceContent}
                                        </p>
                                        <div className="absolute bottom-2 right-3 text-[14px] font-serif text-gray-300 opacity-50 font-black italic">”</div>
@@ -1958,23 +1965,23 @@ export default function DocumentAnalysis() {
                                         <h4 className="text-sm font-black text-gray-900">{item.type}</h4>
                                      </div>
                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-gray-400 font-bold uppercase">雷同判定</span>
+                                        <span className="text-xs text-gray-400 font-bold uppercase">雷同判定</span>
                                         <span className="text-lg text-gray-800 text-orange-600 font-mono tracking-tighter">{item.confidence}%</span>
                                      </div>
                                   </div>
                                   <div className="space-y-2">
-                                     <div className="p-4 bg-white/80 rounded-2xl border border-gray-100 italic text-[11px] text-gray-600 leading-relaxed">
+                                     <div className="p-4 bg-white/80 rounded-2xl border border-gray-100 italic text-xs text-gray-600 leading-relaxed">
                                         <span className="text-orange-500 font-black mr-2">雷同证据:</span>
                                         {item.evidence}
                                      </div>
                                      <div className="px-4 py-2 bg-orange-50/50 rounded-xl">
-                                        <p className="text-[10px] text-orange-700 font-bold leading-relaxed">{item.details}</p>
+                                        <p className="text-xs text-orange-700 font-bold leading-relaxed">{item.details}</p>
                                      </div>
                                   </div>
                                   <div className="flex items-center justify-between mt-2 pt-4 border-t border-gray-100">
-                                     <span className="text-[10px] text-gray-400 font-bold uppercase">判定结论</span>
+                                     <span className="text-xs text-gray-400 font-bold uppercase">判定结论</span>
                                      <div className={cn(
-                                       "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                       "px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest",
                                        item.status === 'critical' ? "bg-red-600 text-white shadow-lg shadow-red-200" : "bg-orange-100 text-orange-600"
                                      )}>
                                        {item.status === 'critical' ? '确定雷同' : '疑似洗稿'}
@@ -2004,10 +2011,10 @@ export default function DocumentAnalysis() {
                                  <div className="flex-1 min-w-0 space-y-2">
                                     <div className="flex items-center justify-between">
                                        <h4 className="text-sm font-black text-gray-900 tracking-tight">{ev.type}</h4>
-                                       <div className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">核心证据</div>
+                                       <div className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-black uppercase tracking-widest border border-red-100">核心证据</div>
                                     </div>
-                                    <p className="text-[11px] text-gray-500 font-bold leading-relaxed">{ev.description}</p>
-                                    <div className="px-3 py-2 bg-gray-50/50 rounded-xl border border-dashed border-gray-100 font-mono text-[9px] text-gray-400 break-all">
+                                    <p className="text-xs text-gray-500 font-bold leading-relaxed">{ev.description}</p>
+                                    <div className="px-3 py-2 bg-gray-50/50 rounded-xl border border-dashed border-gray-100 font-mono text-xs text-gray-400 break-all">
                                        <span className="text-gray-300 mr-2 uppercase tracking-tighter">[ 原始凭证 ]</span>
                                        {ev.evidence}
                                     </div>
@@ -2044,7 +2051,7 @@ export default function DocumentAnalysis() {
                   <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-normal text-gray-900 tracking-tight">选择待比对文档</h3>
-                      <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-widest">仅支持“标书”类型文档进行核验</p>
+                      <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">仅支持“标书”类型文档进行核验</p>
                     </div>
                     <button 
                       onClick={() => setShowDocSelector({ side: null })}
@@ -2079,7 +2086,7 @@ export default function DocumentAnalysis() {
                          </div>
                          <div className="flex-1 min-w-0">
                            <p className="text-sm font-black text-gray-900 truncate pr-4">{doc.name}</p>
-                           <p className="text-[10px] text-gray-400 font-bold mt-0.5 tracking-tight uppercase">
+                           <p className="text-xs text-gray-400 font-bold mt-0.5 tracking-tight uppercase">
                              {(doc.size / 1024 / 1024).toFixed(1)} MB · 标书文件
                            </p>
                          </div>
@@ -2099,7 +2106,7 @@ export default function DocumentAnalysis() {
                   </div>
                   
                   <div className="p-6 bg-gray-50/50 border-t border-gray-50">
-                    <p className="text-[10px] text-gray-400 font-bold text-center italic">注：若您的标书未出现在列表中，请先前往“文档分析”进行解析</p>
+                    <p className="text-xs text-gray-400 font-bold text-center italic">注：若您的标书未出现在列表中，请先前往“文档分析”进行解析</p>
                   </div>
                 </motion.div>
               </div>
@@ -2114,10 +2121,10 @@ export default function DocumentAnalysis() {
                    <Bot size={22} />
                  </div>
                  <div>
-                   <h3 className="text-sm font-normal text-lg tracking-tight text-gray-900 leading-tight">文档内容提问</h3>
+                   <h3 className="text-sm font-normal text-lg tracking-tight text-gray-900 leading-tight">切线详情</h3>
                    <div className="flex items-center gap-1.5 mt-0.5">
                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                     <span className="text-[11px] font-medium text-gray-400">AI 审计专家在线</span>
+                     <span className="text-xs font-medium text-gray-400">AI 审计专家在线</span>
                    </div>
                  </div>
                </div>
@@ -2140,7 +2147,7 @@ export default function DocumentAnalysis() {
                        '提取所有支付节点',
                        '检查违约责任条款'
                      ].map(q => (
-                       <button key={q} className="px-3 py-1.5 bg-blue-50/50 text-blue-600 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-all border border-blue-100/50">
+                       <button key={q} className="px-3 py-1.5 bg-blue-50/50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all border border-blue-100/50">
                          {q}
                        </button>
                      ))}
@@ -2171,8 +2178,8 @@ export default function DocumentAnalysis() {
                      </div>
                    </div>
                    <div className="flex flex-wrap gap-2 mt-2">
-                     <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50/50 border border-blue-100 rounded-md text-[10px] text-blue-600 font-medium">
-                       <span className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center text-[8px]">1</span>
+                     <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50/50 border border-blue-100 rounded-md text-xs text-blue-600 font-medium">
+                       <span className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center text-xs">1</span>
                        <span className="truncate max-w-[150px]">《XX工程项目合同》 P5</span>
                      </div>
                    </div>
@@ -2184,28 +2191,33 @@ export default function DocumentAnalysis() {
              <div className="px-5 pb-8 pt-2 bg-white shrink-0">
                <div className="relative">
                  <div className="bg-white border border-gray-200 rounded-[24px] shadow-xl shadow-gray-200/40 overflow-hidden transition-all focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50">
-                   {selectedDocs.length > 0 && (
-                     <div className="px-6 pt-4 flex flex-wrap gap-2">
-                       {docs.filter(d => selectedDocs.includes(d.id)).map(doc => (
-                         <div key={doc.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100 group/chip animate-in fade-in slide-in-from-bottom-2">
+                   {chatDocId && docs.find(d => d.id === chatDocId) && (
+                     <div className="px-6 pt-4 flex flex-col gap-2">
+                       <div className="flex flex-wrap gap-2">
+                         <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100 group/chip animate-in fade-in slide-in-from-bottom-2">
                            <div className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
                               <FileText size={10} />
                            </div>
-                           <span className="text-[9px] font-bold text-gray-600 truncate max-w-[120px]">{doc.name}</span>
+                           <span className="text-xs font-bold text-gray-600 truncate max-w-[150px]">{docs.find(d => d.id === chatDocId)?.name}</span>
                            <button 
-                             onClick={() => handleToggleSelect(doc.id)}
+                             onClick={() => setChatDocId(null)}
                              className="w-3.5 h-3.5 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-300 transition-colors cursor-pointer"
                            >
                               <Plus size={8} className="rotate-45" />
                            </button>
                          </div>
-                       ))}
+                       </div>
                      </div>
                    )}
                    <textarea
-                    placeholder="询问文档明细、审计规则、或是比对疑点..."
+                    disabled={!chatDocId}
+                    placeholder={
+                      !chatDocId 
+                        ? "请在左侧点击文档对话按钮选择文档..." 
+                        : "询问文档明细、审计规则、或是比对疑点..."
+                    }
                     rows={2}
-                    className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none py-4 px-6 min-h-[80px] max-h-[200px] placeholder:text-gray-300 font-medium"
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none py-4 px-6 min-h-[80px] max-h-[200px] placeholder:text-gray-300 font-medium disabled:cursor-not-allowed"
                    />
                    
                    <div className="flex items-center justify-between px-4 pb-4 pt-1">
@@ -2214,14 +2226,17 @@ export default function DocumentAnalysis() {
                        <div className="h-4 w-[1px] bg-gray-100 mx-2" />
                        
                        <div className="relative inline-flex items-center group/select">
-                         <select className="appearance-none bg-gray-50 border border-gray-100 rounded-full px-3 py-1 pr-6 text-[10px] font-bold text-gray-500 focus:outline-none hover:bg-gray-100 transition-colors cursor-pointer">
+                         <select className="appearance-none bg-gray-50 border border-gray-100 rounded-full px-3 py-1 pr-6 text-xs font-bold text-gray-500 focus:outline-none hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50" disabled={!chatDocId}>
                            <option>DeepSeek-V3</option>
                          </select>
                          <ChevronDown size={10} className="absolute right-2 text-gray-400 pointer-events-none" />
                        </div>
                      </div>
                      
-                     <button className="w-9 h-9 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center transition-all hover:bg-blue-600 hover:text-white disabled:opacity-30">
+                     <button 
+                       disabled={!chatDocId}
+                       className="w-9 h-9 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center transition-all hover:bg-blue-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gray-100 disabled:hover:text-gray-400"
+                     >
                        <ArrowUp size={20} />
                      </button>
                    </div>
@@ -2283,7 +2298,7 @@ export default function DocumentAnalysis() {
                 <div className="flex-1 flex flex-col bg-white">
                   <div className="p-4 border-b border-gray-50 flex flex-col gap-4">
                     <div className="flex items-center justify-between px-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                         {KNOWLEDGE_BASES.find(k => k.id === activeKbId)?.name} (共 {SAMPLE_KB_DOCS.filter(d => d.kbId === activeKbId).length} 个文档)
                       </span>
                     </div>
@@ -2327,7 +2342,7 @@ export default function DocumentAnalysis() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-700 font-bold group-hover:text-blue-700 truncate">{kbDoc.name}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">PDF · 3.2MB · 2024-03-15</p>
+                          <p className="text-xs text-gray-400 mt-0.5">PDF · 3.2MB · 2024-03-15</p>
                         </div>
                       </div>
                     );
@@ -2352,7 +2367,7 @@ export default function DocumentAnalysis() {
             </div>
 
             <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0 flex items-center justify-between">
-                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
                   已选择 {selectedKbDocIds.length} 个文档
                 </p>
                 <div className="flex items-center gap-3">
@@ -2414,7 +2429,7 @@ export default function DocumentAnalysis() {
                 <section>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-1 h-3.5 bg-blue-600 rounded-full" />
-                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">选择解析模型</h4>
+                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">选择解析模型</h4>
                   </div>
                   <div className="flex bg-gray-100 p-1.5 rounded-2xl gap-1.5">
                     {[
@@ -2445,14 +2460,14 @@ export default function DocumentAnalysis() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-1 h-3.5 bg-blue-600 rounded-full" />
-                      <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">配置提取字段</h4>
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">配置提取字段</h4>
                     </div>
                     <button 
                       onClick={() => {
                         const allOpts = Object.keys(EXTRACTION_DETAILS[parsingConfig.docType]);
                         setParsingConfig(prev => ({ ...prev, options: prev.options.length === allOpts.length ? [] : allOpts }));
                       }}
-                      className="text-[10px] font-black text-blue-600 hover:underline px-2"
+                      className="text-xs font-black text-blue-600 hover:underline px-2"
                     >
                       一键快速选择
                     </button>
@@ -2508,7 +2523,7 @@ export default function DocumentAnalysis() {
 
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                 <div className="flex flex-col">
-                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">已勾选任务项</span>
+                   <span className="text-xs font-black text-gray-400 uppercase tracking-widest">已勾选任务项</span>
                    <span className="text-sm font-black text-blue-600">{parsingConfig.options.length} 个配置类</span>
                 </div>
                 <div className="flex items-center gap-4">
@@ -2520,6 +2535,54 @@ export default function DocumentAnalysis() {
                   >
                     立即解析
                     <ArrowRight size={18} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Delete Confirm Modal */}
+      <AnimatePresence>
+        {showConfirmDelete && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowConfirmDelete(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4">
+                  <Trash2 size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">确认删除文档？</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  删除后该文档的所有分析结果、比对记录将无法恢复。是否确认删除？
+                </p>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setShowConfirmDelete(null)}
+                    className="flex-1 py-3 bg-gray-50 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setDocs(prev => prev.filter(d => d.id !== showConfirmDelete));
+                      setSelectedDocs(prev => prev.filter(id => id !== showConfirmDelete));
+                      if (selectedDocId === showConfirmDelete) setSelectedDocId(null);
+                      if (chatDocId === showConfirmDelete) setChatDocId(null);
+                      setShowConfirmDelete(null);
+                    }}
+                    className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all active:scale-95"
+                  >
+                    确认删除
                   </button>
                 </div>
               </div>

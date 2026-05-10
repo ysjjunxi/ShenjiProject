@@ -336,15 +336,21 @@ export interface LogicBlock {
   relation: string;
 }
 
-export interface RuleConfigurableCheckpoint {
+export interface LogicGroup {
   id: string;
-  name: string;
+  relation?: string;
   logicBlocks: LogicBlock[];
   penaltyBasis: {
     source: string;
     chapter: string;
     content: string;
   };
+}
+
+export interface RuleConfigurableCheckpoint {
+  id: string;
+  name: string;
+  logicGroups: LogicGroup[];
 }
 
 export interface AuditRule {

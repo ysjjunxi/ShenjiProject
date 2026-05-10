@@ -95,10 +95,16 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
       configurableCheckpoints: [{
         id: 'cc_' + Date.now(),
         name: '',
-        logicBlocks: [
-          { id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param', relation: '' }
-        ],
-        penaltyBasis: { source: '', chapter: '', content: '' }
+        logicGroups: [
+          {
+            id: 'lg_' + Date.now(),
+            relation: 'AND',
+            logicBlocks: [
+              { id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param', relation: '' }
+            ],
+            penaltyBasis: { source: '', chapter: '', content: '' }
+          }
+        ]
       }],
       standardTables: [],
       outputData: '',
@@ -262,17 +268,10 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索规则名称或描述..."
+                placeholder="搜索审查点名称和描述"
                 className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-medium"
               />
             </div>
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95 text-sm font-medium"
-            >
-              <Upload size={18} />
-              <span>导入规则</span>
-            </button>
             <button 
               onClick={handleAddRule}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm"
@@ -347,17 +346,10 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索规则名称或描述..."
+                placeholder="搜索审查点名称和描述"
                 className="w-64 h-10 bg-white border border-gray-200 rounded-lg pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
               />
             </div>
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95 text-sm font-medium"
-            >
-              <Upload size={18} />
-              <span>导入规则</span>
-            </button>
             <button 
               onClick={handleAddRule}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
@@ -373,8 +365,8 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
               <tr>
                 <th className="px-6 py-4 font-normal">审查点名称</th>
                 <th className="px-6 py-4 font-normal">适用业务类型</th>
-                <th className="px-6 py-4 font-normal">规则类型</th>
-                <th className="px-6 py-4 font-normal">执行审查点</th>
+                <th className="px-6 py-4 font-normal">审查点类型</th>
+                <th className="px-6 py-4 font-normal">执行规则</th>
                 <th className="px-6 py-4 font-normal">描述</th>
                 <th className="px-6 py-4 font-normal">状态</th>
                 <th className="px-6 py-4 font-normal">操作</th>
@@ -392,7 +384,7 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                         <ShieldCheck size={18} />
                       </div>
                       <div>
-                        <p className="font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{rule.name}</p>
+                        <p className="text-sm font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{rule.name}</p>
                         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                           {rule.creator}
                         </p>
@@ -410,7 +402,7 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600 max-w-xs truncate" title={rule.fixedCheckpoints.map(c => c.name).concat(rule.configurableCheckpoints?.map(c => c.name) || []).join(', ')}>
-                    {rule.fixedCheckpoints.length + (rule.configurableCheckpoints?.length || 0)} 个审查点
+                    {rule.fixedCheckpoints.length + (rule.configurableCheckpoints?.length || 0)}
                   </td>
                   <td className="px-6 py-4 text-gray-500 max-w-xs truncate" title={rule.description}>
                     {rule.description}
@@ -562,11 +554,15 @@ export default function AuditRuleMgmt({ hideHeader = false }: { hideHeader?: boo
 
 function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => void; onSave: (rule: AuditRule) => void }) {
   const [formData, setFormData] = React.useState<AuditRule>({ ...rule });
-  const [showLawSelector, setShowLawSelector] = React.useState<number | null>(null);
+  const [showLawSelector, setShowLawSelector] = React.useState<{ccIndex: number, lgIndex: number} | null>(null);
 
-  const handleSelectLaw = (index: number, pb: { source: string, chapter: string, content: string }) => {
+  const handleSelectLaw = (index: {ccIndex: number, lgIndex: number}, pb: { source: string, chapter: string, content: string }) => {
     setShowLawSelector(null);
-    updateConfigurableCheckpoint(index, { penaltyBasis: pb });
+    const newConfigurable = [...formData.configurableCheckpoints];
+    const lg = [...newConfigurable[index.ccIndex].logicGroups];
+    lg[index.lgIndex] = { ...lg[index.lgIndex], penaltyBasis: pb };
+    newConfigurable[index.ccIndex] = { ...newConfigurable[index.ccIndex], logicGroups: lg };
+    setFormData({ ...formData, configurableCheckpoints: newConfigurable });
   };
 
   const addConfigurableCheckpoint = () => {
@@ -578,10 +574,14 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
         {
           id: 'cc_' + Date.now(),
           name: '',
-          logicBlocks: [
-            { id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param', relation: '' }
-          ],
-          penaltyBasis: { source: '', chapter: '', content: '' }
+          logicGroups: [{
+            id: 'lg_' + Date.now(),
+            relation: 'AND',
+            logicBlocks: [
+              { id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param', relation: '' }
+            ],
+            penaltyBasis: { source: '', chapter: '', content: '' }
+          }]
         }
       ]
     });
@@ -640,7 +640,7 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">规则类型</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">审查点类型</label>
                 <select 
                   value={formData.ruleType}
                   onChange={(e) => setFormData({ ...formData, ruleType: e.target.value as any })}
@@ -698,13 +698,13 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
               {/* Fixed Checkpoints */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">法定固定审查点</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">法定固定规则</label>
                   {formData.fixedCheckpoints.length === 0 && (
                     <button 
                       onClick={() => setFormData({...formData, fixedCheckpoints: [...formData.fixedCheckpoints, { name: '', description: '' }]})} 
                       className="text-xs text-purple-600 font-medium hover:text-purple-700"
                     >
-                      + 新增法定固定审查点
+                      + 新增法定固定规则
                     </button>
                   )}
                 </div>
@@ -723,107 +723,154 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
                       }} />
                     </div>
                   ))}
-                  {formData.fixedCheckpoints.length === 0 && <div className="text-center py-4 bg-gray-50 border border-dashed rounded-xl border-gray-200 text-xs text-gray-400">暂无法定固定审查点</div>}
+                  {formData.fixedCheckpoints.length === 0 && <div className="text-center py-4 bg-gray-50 border border-dashed rounded-xl border-gray-200 text-xs text-gray-400">暂无法定固定规则</div>}
                 </div>
               </div>
 
               {/* Business Checkpoints (Configurable) */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">可配置业务审查点</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">可配置业务规则</label>
                   {formData.configurableCheckpoints.length === 0 && (
-                    <button onClick={addConfigurableCheckpoint} className="text-xs text-orange-600 font-medium hover:text-orange-700 bg-orange-50 px-2 py-1 rounded">+ 新增可配置业务审查点</button>
+                    <button onClick={addConfigurableCheckpoint} className="text-xs text-orange-600 font-medium hover:text-orange-700 bg-orange-50 px-2 py-1 rounded">+ 新增可配置业务规则</button>
                   )}
                 </div>
                 <div className="space-y-6">
                   {formData.configurableCheckpoints.map((cc, index) => (
                     <div key={cc.id} className="p-5 bg-orange-50/20 rounded-2xl border border-orange-100 relative group/cc">
                       <div className="mb-4 pr-10">
-                        <label className="text-xs text-orange-600 font-bold uppercase tracking-widest mb-1 block">审查点判断规则名称</label>
+                        <label className="text-xs text-orange-600 font-bold uppercase tracking-widest mb-1 block">判断规则名称</label>
                         <input className="w-full text-sm font-bold bg-transparent border-b border-dashed border-gray-300 pb-1 mb-2 outline-none focus:border-orange-500 placeholder-gray-400" placeholder="例如: 合同违规判定" value={cc.name} onChange={e => updateConfigurableCheckpoint(index, { name: e.target.value })} />
                       </div>
 
-                      {/* Logic Blocks */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4 mt-2">
-                           <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Terminal size={14} className="text-orange-500" /> 规则校验逻辑块</label>
-                           <button onClick={() => {
-                             const logicBlocks = [...cc.logicBlocks, { id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param' as const, relation: 'AND' }];
-                             updateConfigurableCheckpoint(index, { logicBlocks });
-                           }} className="text-xs font-medium text-orange-600 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">+ 添加校验条件</button>
+                      {/* Logic Groups */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <label className="text-xs font-bold text-gray-700 uppercase tracking-widest"><Terminal size={14} className="inline mr-1 text-orange-500" /> 逻辑块配置</label>
+                          <button onClick={() => {
+                            const logicGroups = [...cc.logicGroups, {
+                              id: 'lg_' + Date.now(),
+                              relation: 'AND',
+                              logicBlocks: [{ id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param' as const, relation: 'AND' }],
+                              penaltyBasis: { source: '', chapter: '', content: '' }
+                            }];
+                            updateConfigurableCheckpoint(index, { logicGroups });
+                          }} className="text-xs bg-orange-100 text-orange-600 px-3 py-1.5 rounded hover:bg-orange-200 transition-colors">+ 添加新逻辑块</button>
                         </div>
-                        <div className="relative pl-12 pt-4 pb-4 bg-gray-50/50 rounded-2xl border border-gray-100 shadow-sm pr-4">
-                          {cc.logicBlocks.length > 1 && (
-                            <div className="absolute left-[20px] top-10 bottom-10 w-px bg-gray-300"></div>
-                          )}
-                          
-                          {cc.logicBlocks.map((lb, bIdx) => (
-                            <div key={lb.id} className="relative mb-4 last:mb-0 group/lbwrapper z-10">
-                               {bIdx > 0 && (
-                                 <div className="absolute -left-[28px] top-1/2 w-[28px] h-px bg-gray-300 -z-10"></div>
-                               )}
-                               
-                               {bIdx > 0 && (
-                                 <div className="absolute -left-[40px] top-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden group-hover/lbwrapper:border-orange-400 transition-colors z-20">
-                                    <select 
-                                      value={lb.relation} 
-                                      onChange={(e) => {
-                                        const logicBlocks = [...cc.logicBlocks]; logicBlocks[bIdx] = { ...logicBlocks[bIdx], relation: e.target.value }; updateConfigurableCheckpoint(index, { logicBlocks });
-                                      }}
-                                      className="text-xs font-bold text-orange-600 outline-none w-10 text-center cursor-pointer py-1 bg-transparent hover:bg-orange-50 transition-colors appearance-none"
-                                      style={{ textAlignLast: 'center' }}
-                                    >
-                                      <option value="AND">且</option>
-                                      <option value="OR">或</option>
-                                    </select>
+                        
+                        <div className="space-y-8">
+                          {cc.logicGroups.map((lg, lgIndex) => (
+                            <div key={lg.id} className="p-4 bg-white rounded-xl border border-orange-200 shadow-sm relative group/lg">
+                              {lgIndex > 0 && (
+                                <div className="absolute -top-[16px] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden z-20">
+                                  <select 
+                                    value={lg.relation} 
+                                    onChange={(e) => {
+                                      const logicGroups = [...cc.logicGroups];
+                                      logicGroups[lgIndex] = { ...logicGroups[lgIndex], relation: e.target.value };
+                                      updateConfigurableCheckpoint(index, { logicGroups });
+                                    }}
+                                    className="text-xs font-bold text-orange-600 outline-none w-12 text-center cursor-pointer py-1 bg-transparent hover:bg-orange-50 transition-colors appearance-none"
+                                    style={{ textAlignLast: 'center' }}
+                                  >
+                                    <option value="AND">且</option>
+                                    <option value="OR">或</option>
+                                  </select>
+                                </div>
+                              )}
+                              <button onClick={() => {
+                                const logicGroups = [...cc.logicGroups];
+                                logicGroups.splice(lgIndex, 1);
+                                updateConfigurableCheckpoint(index, { logicGroups });
+                              }} className="absolute -top-3 -right-3 w-6 h-6 bg-red-100 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover/lg:opacity-100 transition-opacity hover:bg-red-200 shadow-sm z-20">
+                                <X size={12} />
+                              </button>
+                              
+                              <div className="flex items-center justify-between mb-4 mt-2">
+                                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Terminal size={14} className="text-orange-500" /> 规则校验逻辑块 ({lgIndex + 1})</label>
+                                 <button onClick={() => {
+                                   const logicGroups = [...cc.logicGroups];
+                                   logicGroups[lgIndex].logicBlocks.push({ id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param' as const, relation: 'AND' });
+                                   updateConfigurableCheckpoint(index, { logicGroups });
+                                 }} className="text-xs font-medium text-orange-600 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">+ 添加校验条件</button>
+                              </div>
+                              <div className="relative pl-12 pt-4 pb-4 bg-gray-50/50 rounded-2xl border border-gray-100 shadow-sm pr-4 mb-4">
+                                {lg.logicBlocks.length > 1 && (
+                                  <div className="absolute left-[20px] top-10 bottom-10 w-px bg-gray-300"></div>
+                                )}
+                                
+                                {lg.logicBlocks.map((lb, bIdx) => (
+                                  <div key={lb.id} className="relative mb-4 last:mb-0 group/lbwrapper z-10">
+                                     {bIdx > 0 && (
+                                       <div className="absolute -left-[28px] top-1/2 w-[28px] h-px bg-gray-300 -z-10"></div>
+                                     )}
+                                     
+                                     {bIdx > 0 && (
+                                       <div className="absolute -left-[40px] top-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden group-hover/lbwrapper:border-orange-400 transition-colors z-20">
+                                          <select 
+                                            value={lb.relation} 
+                                            onChange={(e) => {
+                                              const logicGroups = [...cc.logicGroups];
+                                              logicGroups[lgIndex].logicBlocks[bIdx] = { ...logicGroups[lgIndex].logicBlocks[bIdx], relation: e.target.value };
+                                              updateConfigurableCheckpoint(index, { logicGroups });
+                                            }}
+                                            className="text-xs font-bold text-orange-600 outline-none w-10 text-center cursor-pointer py-1 bg-transparent hover:bg-orange-50 transition-colors appearance-none"
+                                            style={{ textAlignLast: 'center' }}
+                                          >
+                                            <option value="AND">且</option>
+                                            <option value="OR">或</option>
+                                          </select>
+                                       </div>
+                                     )}
+                                     
+                                     <div className="w-full flex items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-orange-300 transition-colors group/lb">
+                                       <input placeholder="变量A (如: 合同金额)" value={lb.leftTerm} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], leftTerm: e.target.value }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="w-1/3 min-w-[120px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
+                                       <select value={lb.operator} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], operator: e.target.value }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="w-16 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-2 py-1.5 text-xs outline-none font-mono font-bold text-center transition-all appearance-none">
+                                         <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option><option value="==">==</option><option value="!=">!=</option>
+                                       </select>
+                                       <input placeholder="变量B / 固定值" value={lb.rightTerm} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], rightTerm: e.target.value }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="flex-1 min-w-[100px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
+                                       
+                                       <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                                       
+                                       <div className="flex gap-2 items-center shrink-0">
+                                         <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+                                           <input type="checkbox" checked={lb.rightType==='param'} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], rightType: e.target.checked?'param':'fixed' }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="w-3.5 h-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-500" />
+                                           参数化
+                                         </label>
+                                       </div>
+                                       
+                                       {lb.rightType === 'param' && (
+                                         <div className="flex gap-1.5 items-center shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-100">
+                                            <input placeholder="默认值(如 5)" value={lb.paramValue||''} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramValue: e.target.value }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="w-16 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
+                                            <input placeholder="下限~上限" value={lb.paramRangeMin || lb.paramRangeMax ? `${lb.paramRangeMin||''}~${lb.paramRangeMax||''}` : ''} onChange={e => { const lgs = [...cc.logicGroups]; const parts = e.target.value.split('~'); lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramRangeMin: parts[0]||'', paramRangeMax: parts[1]||'' }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" title="输入格式: 下限~上限" />
+                                            <input placeholder="单位" value={lb.paramUnit||''} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramUnit: e.target.value }; updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="w-12 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
+                                         </div>
+                                       )}
+                                       
+                                       <button onClick={() => { const lgs = [...cc.logicGroups]; lgs[lgIndex].logicBlocks.splice(bIdx, 1); updateConfigurableCheckpoint(index, { logicGroups: lgs}); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-1 opacity-0 group-hover/lb:opacity-100"><X size={16}/></button>
+                                     </div>
+                                  </div>
+                                ))}
+                                {lg.logicBlocks.length === 0 && <p className="text-xs text-center text-gray-400 py-4">暂无校验逻辑，请添加</p>}
+                              </div>
+
+                              {/* Penalty Basis (One-to-One) */}
+                              <div className="p-4 bg-green-50/50 rounded-xl border border-green-100">
+                                 <div className="flex items-center justify-between mb-3">
+                                   <label className="text-xs font-bold text-green-700 flex items-center gap-1.5"><BookOpen size={14}/> 对应判罚依据 <span className="font-normal text-green-600/70">(一对一匹配)</span></label>
+                                   <button onClick={() => setShowLawSelector({ccIndex: index, lgIndex: lgIndex})} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded shadow-sm hover:bg-green-200 flex items-center gap-1 transition-colors">
+                                     <Search size={12}/> 从法律法规知识库选择
+                                   </button>
                                  </div>
-                               )}
-                               
-                               <div className="w-full flex items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-orange-300 transition-colors group/lb">
-                                 <input placeholder="变量A (如: 合同金额)" value={lb.leftTerm} onChange={e => { const lbs = [...cc.logicBlocks]; lbs[bIdx] = { ...lbs[bIdx], leftTerm: e.target.value }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="w-1/3 min-w-[120px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
-                                 <select value={lb.operator} onChange={e => { const lbs = [...cc.logicBlocks]; lbs[bIdx] = { ...lbs[bIdx], operator: e.target.value }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="w-16 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-2 py-1.5 text-xs outline-none font-mono font-bold text-center transition-all appearance-none">
-                                   <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option><option value="==">==</option><option value="!=">!=</option>
-                                 </select>
-                                 <input placeholder="变量B / 固定值" value={lb.rightTerm} onChange={e => { const lbs = [...cc.logicBlocks]; lbs[bIdx] = { ...lbs[bIdx], rightTerm: e.target.value }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="flex-1 min-w-[100px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
-                                 
-                                 <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                                 
-                                 <div className="flex gap-2 items-center shrink-0">
-                                   <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 hover:text-gray-700">
-                                     <input type="checkbox" checked={lb.rightType==='param'} onChange={e => { const lbs = [...cc.logicBlocks]; lbs[bIdx] = { ...lbs[bIdx], rightType: e.target.checked?'param':'fixed' }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="w-3.5 h-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-500" />
-                                     参数化
-                                   </label>
+                                 <div className="grid grid-cols-2 gap-3 mb-3">
+                                   <input placeholder="法规来源名称，如: 《预算法》" value={lg.penaltyBasis.source} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].penaltyBasis = {...lg.penaltyBasis, source: e.target.value}; updateConfigurableCheckpoint(index, { logicGroups: lgs }); }} className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-green-400" />
+                                   <input placeholder="具体章节条款，如: 第八条" value={lg.penaltyBasis.chapter} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].penaltyBasis = {...lg.penaltyBasis, chapter: e.target.value}; updateConfigurableCheckpoint(index, { logicGroups: lgs }); }} className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-green-400" />
                                  </div>
-                                 
-                                 {lb.rightType === 'param' && (
-                                   <div className="flex gap-1.5 items-center shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-100">
-                                      <input placeholder="默认值(如 5)" value={lb.paramValue||''} onChange={e => { const lbs = [...cc.logicBlocks]; lbs[bIdx] = { ...lbs[bIdx], paramValue: e.target.value }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="w-16 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
-                                      <input placeholder="下限~上限" value={lb.paramRangeMin || lb.paramRangeMax ? `${lb.paramRangeMin||''}~${lb.paramRangeMax||''}` : ''} onChange={e => { const lbs = [...cc.logicBlocks]; const parts = e.target.value.split('~'); lbs[bIdx] = { ...lbs[bIdx], paramRangeMin: parts[0]||'', paramRangeMax: parts[1]||'' }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" title="输入格式: 下限~上限" />
-                                      <input placeholder="单位" value={lb.paramUnit||''} onChange={e => { const lbs = [...cc.logicBlocks]; lbs[bIdx] = { ...lbs[bIdx], paramUnit: e.target.value }; updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="w-12 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
-                                   </div>
-                                 )}
-                                 
-                                 <button onClick={() => { const lbs = [...cc.logicBlocks]; lbs.splice(bIdx, 1); updateConfigurableCheckpoint(index, { logicBlocks: lbs}); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-1 opacity-0 group-hover/lb:opacity-100"><X size={16}/></button>
-                               </div>
+                                 <textarea placeholder="相关法规内容的引述说明..." value={lg.penaltyBasis.content} onChange={e => { const lgs = [...cc.logicGroups]; lgs[lgIndex].penaltyBasis = {...lg.penaltyBasis, content: e.target.value}; updateConfigurableCheckpoint(index, { logicGroups: lgs }); }} rows={2} className="w-full bg-white border border-gray-200 rounded-lg p-3 text-xs outline-none focus:border-green-400 resize-none leading-relaxed text-gray-600" />
+                              </div>
                             </div>
                           ))}
-                          {cc.logicBlocks.length === 0 && <p className="text-xs text-center text-gray-400 py-4">暂无校验逻辑，请添加</p>}
                         </div>
-                      </div>
-
-                      {/* Penalty Basis (One-to-One) */}
-                      <div className="p-4 bg-green-50/50 rounded-xl border border-green-100">
-                         <div className="flex items-center justify-between mb-3">
-                           <label className="text-xs font-bold text-green-700 flex items-center gap-1.5"><BookOpen size={14}/> 对应判罚依据 <span className="font-normal text-green-600/70">(一对一匹配)</span></label>
-                           <button onClick={() => setShowLawSelector(index)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded shadow-sm hover:bg-green-200 flex items-center gap-1 transition-colors">
-                             <Search size={12}/> 从法律法规知识库选择
-                           </button>
-                         </div>
-                         <div className="grid grid-cols-2 gap-3 mb-3">
-                           <input placeholder="法规来源名称，如: 《预算法》" value={cc.penaltyBasis.source} onChange={e => { const pb = {...cc.penaltyBasis, source: e.target.value}; updateConfigurableCheckpoint(index, { penaltyBasis: pb }); }} className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-green-400" />
-                           <input placeholder="具体章节条款，如: 第八条" value={cc.penaltyBasis.chapter} onChange={e => { const pb = {...cc.penaltyBasis, chapter: e.target.value}; updateConfigurableCheckpoint(index, { penaltyBasis: pb }); }} className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-green-400" />
-                         </div>
-                         <textarea placeholder="相关法规内容的引述说明..." value={cc.penaltyBasis.content} onChange={e => { const pb = {...cc.penaltyBasis, content: e.target.value}; updateConfigurableCheckpoint(index, { penaltyBasis: pb }); }} rows={2} className="w-full bg-white border border-gray-200 rounded-lg p-3 text-xs outline-none focus:border-green-400 resize-none leading-relaxed text-gray-600" />
                       </div>
 
                     </div>
@@ -831,7 +878,7 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
                   {formData.configurableCheckpoints.length === 0 && (
                     <div className="py-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl">
                       <ShieldCheck size={24} className="mx-auto text-gray-300 mb-2" />
-                      <p className="text-xs text-gray-500">暂无可配置业务审查点</p>
+                      <p className="text-xs text-gray-500">暂无可配置业务规则</p>
                     </div>
                   )}
                 </div>
@@ -864,19 +911,19 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
       </div>
 
       {/* Save Button Fixed Bottom Bar */}
-      <div className="border-t border-gray-100 bg-white p-6 sticky bottom-0 z-10 shrink-0">
+      <div className="border-t border-gray-100 bg-white p-4 sticky bottom-0 z-10 shrink-0">
         <div className="max-w-5xl mx-auto flex justify-end gap-3">
           <button 
             onClick={onBack}
-            className="px-8 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-all active:scale-95"
+            className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all active:scale-95 border border-transparent hover:border-gray-200"
           >
             取消
           </button>
           <button 
             onClick={() => onSave({ ...formData, updatedAt: Date.now() })}
-            className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20 active:scale-95"
           >
-            <Save size={18} />
+            <Save size={16} />
             <span>保存规则</span>
           </button>
         </div>
@@ -956,7 +1003,7 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
                   <div className="w-2/3 flex flex-col overflow-y-auto p-4 space-y-3 bg-white">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-2 mb-1">包含条款</h4>
                     
-                    <div onClick={() => handleSelectLaw(showLawSelector, { source: '《中华人民共和国预算法》', chapter: '第三十二条', content: '各级预算应当根据年度经济社会发展目标、国家宏观调控总体要求和跨年度预算平衡的需要，参考上一年预算执行情况、有关支出绩效评价结果和本年度收支预测，按照规定程序征求各方面意见后，进行编制。'})} className="bg-white p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-green-500 hover:shadow-md transition-all group">
+                    <div onClick={() => { if(showLawSelector) handleSelectLaw(showLawSelector, { source: '《中华人民共和国预算法》', chapter: '第三十二条', content: '各级预算应当根据年度经济社会发展目标、国家宏观调控总体要求和跨年度预算平衡的需要，参考上一年预算执行情况、有关支出绩效评价结果和本年度收支预测，按照规定程序征求各方面意见后，进行编制。'})}} className="bg-white p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-green-500 hover:shadow-md transition-all group">
                       <div className="flex items-start justify-between mb-2">
                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">第三十二条</span>
                          <button className="text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity font-medium">选择此条款</button>
@@ -966,7 +1013,7 @@ function RuleConfig({ rule, onBack, onSave }: { rule: AuditRule; onBack: () => v
                       </p>
                     </div>
 
-                    <div onClick={() => handleSelectLaw(showLawSelector, { source: '《中华人民共和国预算法》', chapter: '第三十三条', content: '省、自治区、直辖市一般公共预算上下级独立，中央不对地方转移支付。'})} className="bg-white p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-green-500 hover:shadow-md transition-all group">
+                    <div onClick={() => { if (showLawSelector) handleSelectLaw(showLawSelector, { source: '《中华人民共和国预算法》', chapter: '第三十三条', content: '省、自治区、直辖市一般公共预算上下级独立，中央不对地方转移支付。'})}} className="bg-white p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-green-500 hover:shadow-md transition-all group">
                       <div className="flex items-start justify-between mb-2">
                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">第三十三条</span>
                          <button className="text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity font-medium">选择此条款</button>

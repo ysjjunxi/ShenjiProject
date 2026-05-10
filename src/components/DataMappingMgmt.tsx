@@ -431,7 +431,7 @@ export default function DataMappingMgmt() {
       {/* Left Sidebar: Database List */}
       <div className="w-[300px] bg-white border-r border-gray-200 flex flex-col shrink-0">
         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-gray-900 tracking-tight">数据库列表</h2>
+          <h2 className="text-sm font-normal text-gray-900 tracking-tight">数据库列表</h2>
           <button 
             onClick={handleAiMapDb}
             disabled={isAiMapping}
@@ -521,7 +521,7 @@ export default function DataMappingMgmt() {
           <>
             <div className="px-6 h-[72px] border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
               <div>
-                <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <h2 className="text-lg font-normal text-gray-900 tracking-tight flex items-center gap-2">
                   <span>{activeDbInfo?.name}</span>
                   <span className="text-xs font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded uppercase tracking-widest">字段映射</span>
                 </h2>
@@ -614,7 +614,7 @@ export default function DataMappingMgmt() {
                                 <>
                                   <td className="px-4 py-3 bg-gray-50/30" rowSpan={group.sources.length}>
                                     <div className="flex flex-col gap-1.5">
-                                      <div className="flex items-center gap-1.5 text-blue-700 font-normal text-xs relative group/tooltip">
+                                      <div className="flex items-center gap-1.5 text-blue-700 font-normal text-sm relative group/tooltip">
                                         <Table size={14} className="text-blue-400" />
                                         <span>{group.targetTable || '-'}</span>
                                         {group.targetTableDesc && (
@@ -634,7 +634,7 @@ export default function DataMappingMgmt() {
                                   </td>
                                   <td className="px-4 py-3 bg-gray-50/30" rowSpan={group.sources.length}>
                                     <div className="flex flex-col gap-1">
-                                      <span className="text-xs text-blue-600 font-mono font-medium">{group.targetField || '-'}</span>
+                                      <span className="text-sm text-blue-600 font-mono font-medium">{group.targetField || '-'}</span>
                                       <span className="text-xs text-gray-500">{group.targetFieldCn || '-'}</span>
                                     </div>
                                   </td>
@@ -643,16 +643,16 @@ export default function DataMappingMgmt() {
                               
                               {/* Source columns */}
                               <td className="px-4 py-3">
-                                <span className={cn("text-xs font-normal", item.dbName === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.dbName}</span>
+                                <span className={cn("text-sm font-normal", item.dbName === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.dbName}</span>
                               </td>
                               <td className="px-4 py-3">
-                                <span className={cn("text-xs font-medium", item.sourceTable === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.sourceTable}</span>
+                                <span className={cn("text-sm font-medium", item.sourceTable === '无' ? "text-gray-400 italic" : "text-gray-700")}>{item.sourceTable}</span>
                               </td>
                               <td className="px-4 py-3">
                                 {item.sourceField === '无' ? (
-                                  <span className="text-xs font-medium text-gray-400 italic">无</span>
+                                  <span className="text-sm font-medium text-gray-400 italic">无</span>
                                 ) : (
-                                  <div className="inline-block px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 font-mono">
+                                  <div className="inline-block px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-sm text-gray-600 font-mono">
                                     {item.sourceField}
                                   </div>
                                 )}

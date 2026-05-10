@@ -129,25 +129,30 @@ export const MOCK_RULES: AuditRule[] = [
       {
         id: 'cc_1',
         name: '三公经费超限额支出分析',
-        logicBlocks: [
+        logicGroups: [
           {
-            id: 'lb_1',
-            leftTerm: '三公经费年度支出金额',
-            operator: '>',
-            rightTerm: '年度预算金额',
-            rightType: 'param',
-            paramValue: '10',
-            paramUnit: '%',
-            paramRangeMin: '5',
-            paramRangeMax: '20',
-            relation: 'AND'
+            id: 'lg_1',
+            logicBlocks: [
+              {
+                id: 'lb_1',
+                leftTerm: '三公经费年度支出金额',
+                operator: '>',
+                rightTerm: '年度预算金额',
+                rightType: 'param',
+                paramValue: '10',
+                paramUnit: '%',
+                paramRangeMin: '5',
+                paramRangeMax: '20',
+                relation: 'AND'
+              }
+            ],
+            penaltyBasis: {
+              source: '《党政机关厉行节约反对浪费条例》',
+              chapter: '第八条',
+              content: '党政机关应当严格执行综合预算，不得超预算或者无预算安排支出，不得虚列支出、转移或者套取预算资金。'
+            }
           }
-        ],
-        penaltyBasis: {
-          source: '《党政机关厉行节约反对浪费条例》',
-          chapter: '第八条',
-          content: '党政机关应当严格执行综合预算，不得超预算或者无预算安排支出，不得虚列支出、转移或者套取预算资金。'
-        }
+        ]
       }
     ],
     standardTables: [
@@ -177,22 +182,27 @@ export const MOCK_RULES: AuditRule[] = [
       {
         id: 'cc_2',
         name: '合同违规判定',
-        logicBlocks: [
+        logicGroups: [
           {
-            id: 'lb_3',
-            leftTerm: '中标至签订时间',
-            operator: '>',
-            rightTerm: '30',
-            rightType: 'fixed',
-            paramUnit: '天',
-            relation: 'OR'
+            id: 'lg_2',
+            logicBlocks: [
+              {
+                id: 'lb_3',
+                leftTerm: '中标至签订时间',
+                operator: '>',
+                rightTerm: '30',
+                rightType: 'fixed',
+                paramUnit: '天',
+                relation: 'OR'
+              }
+            ],
+            penaltyBasis: {
+              source: '《中华人民共和国政府采购法》',
+              chapter: '第四十六条',
+              content: '采购人与中标、成交供应商应当在中标、成交通知书发出之日起三十日内，按照采购文件确定的事项签订政府采购合同。'
+            }
           }
-        ],
-        penaltyBasis: {
-          source: '《中华人民共和国政府采购法》',
-          chapter: '第四十六条',
-          content: '采购人与中标、成交供应商应当在中标、成交通知书发出之日起三十日内，按照采购文件确定的事项签订政府采购合同。'
-        }
+        ]
       }
     ],
     standardTables: [

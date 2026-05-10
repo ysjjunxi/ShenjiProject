@@ -217,10 +217,6 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
     alert(`正在准备下载: ${fileName}\n保存路径: ~/Downloads/AuditKnowledge/`);
   };
 
-  const handleBatchDownload = () => {
-    alert(`正在批量打包下载 ${selectedIds.length} 条法律法规...`);
-  };
-
   if (view === 'detail' && selectedLaw) {
     return <LawDetail law={selectedLaw} onBack={() => setView('list')} onStartQA={() => setView('qa')} />;
   }
@@ -278,26 +274,6 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
             )}
           </div>
           <div className="flex items-center gap-2">
-            {selectedIds.length > 0 && (
-              <>
-                <button 
-                  onClick={handleBatchDownload}
-                  className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-xs font-bold"
-                >
-                  <Download size={16} />
-                  <span>下载 ({selectedIds.length})</span>
-                </button>
-                {!readOnly && (
-                  <button 
-                    onClick={handleBatchDelete}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-xs font-bold"
-                  >
-                    <Trash2 size={16} />
-                    <span>删除 ({selectedIds.length})</span>
-                  </button>
-                )}
-              </>
-            )}
             {!readOnly && (
               <button 
                 onClick={handleAdd}
@@ -323,6 +299,16 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                 </span>
               )}
             </div>
+            {!readOnly && (
+              <button 
+                onClick={handleBatchDelete}
+                disabled={selectedIds.length === 0}
+                className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={16} />
+                <span>批量删除 {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse">

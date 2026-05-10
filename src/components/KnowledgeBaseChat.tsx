@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Bot,
   User,
+  Plus,
   MoreHorizontal,
   ChevronDown,
   Brain,
@@ -115,44 +116,76 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 260, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            className="h-full bg-[#F4F7F9] border-r border-[#E5E7EB] flex flex-col shrink-0 overflow-hidden relative"
+            className="h-full bg-[#F5F7FA] border-r border-gray-100 flex flex-col shrink-0 overflow-hidden relative"
           >
-             <div className="p-4 flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-700">对话列表</span>
-                <button 
-                   onClick={onBack}
-                   className="p-1.5 hover:bg-white rounded-lg transition-colors text-gray-400 hover:text-blue-600"
-                   title="返回列表"
-                >
-                   <X size={16} />
-                </button>
-             </div>
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+           <span className="text-sm font-medium text-gray-500">对话列表</span>
+           <button 
+              onClick={onBack}
+              className="p-1.5 hover:bg-white rounded-lg transition-colors text-gray-400 hover:text-blue-600"
+              title="返回列表"
+           >
+              <X size={16} />
+           </button>
+        </div>
+        
+        <button 
+          onClick={() => {
+            const newId = `session-${Date.now()}`;
+            const newSession = { 
+              id: newId, 
+              title: '新对话', 
+              icon: <MessageSquare size={16} className="text-blue-500" /> 
+            };
+            setSessions([newSession, ...sessions]);
+            setActiveSessionId(newId);
+            setMessages([]);
+          }}
+          className="w-full h-10 bg-white/50 text-gray-600 border border-gray-100 rounded-xl flex items-center justify-center gap-2 hover:bg-white hover:border-gray-200 transition-all active:scale-95 text-sm font-normal"
+        >
+          <Plus size={14} className="text-blue-500" />
+          <span>新建对话任务</span>
+        </button>
+     </div>
              
-             <div className="flex-1 overflow-y-auto p-2 space-y-1">
+             <div className="flex-1 overflow-y-auto">
                 {sessions.map(session => (
                    <div 
                       key={session.id}
                       onClick={() => setActiveSessionId(session.id)}
                       className={cn(
-                        "group flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all relative",
-                        activeSessionId === session.id ? "bg-white shadow-sm" : "hover:bg-gray-200/40"
+                        "group relative px-4 py-3 cursor-pointer transition-all border-l-4",
+                        activeSessionId === session.id 
+                          ? "bg-white border-blue-500 shadow-sm" 
+                          : "border-transparent hover:bg-gray-200/50"
                       )}
                    >
-                      <div className="shrink-0">
-                         {session.icon || <MessageSquare size={16} className="text-gray-400" />}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 min-w-0 pr-6">
+                            <div className="shrink-0">
+                               {session.icon || <MessageSquare size={16} className="text-gray-400" />}
+                            </div>
+                            <h4 className={cn(
+                              "text-sm font-medium truncate",
+                              activeSessionId === session.id ? "text-gray-900" : "text-gray-600"
+                            )}>
+                               {session.title}
+                            </h4>
+                          </div>
+                          <button 
+                            onClick={(e) => deleteSession(e, session.id)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-red-50"
+                            title="删除对话"
+                          >
+                             <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <span className="text-xs text-gray-400 pl-[26px]">
+                          刚刚
+                        </span>
                       </div>
-                      <span className="text-[13px] font-medium text-gray-700 truncate flex-1">
-                         {session.title}
-                      </span>
-                      <button 
-                        onClick={(e) => deleteSession(e, session.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity text-gray-400"
-                      >
-                         <Trash2 size={13} />
-                      </button>
-                      {activeSessionId === session.id && (
-                        <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-blue-600 rounded-r-full" />
-                      )}
                    </div>
                 ))}
              </div>
@@ -160,21 +193,31 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
         )}
       </AnimatePresence>
 
-      {/* Sidebar Toggle Handle */}
-      <div 
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="absolute top-1/2 -translate-y-1/2 left-0 z-20 group cursor-pointer"
-        style={{ left: sidebarCollapsed ? '0' : '260px', transition: 'left 0.3s ease-in-out' }}
-      >
-        <div className="w-1.5 h-16 bg-white border border-gray-100 rounded-r-md shadow-sm flex items-center justify-center hover:bg-blue-50 transition-colors">
-           <div className={cn("text-gray-400 transition-transform duration-300", sidebarCollapsed ? "" : "rotate-180")}>
-              <ChevronRight size={10} strokeWidth={3} />
-           </div>
-        </div>
-      </div>
+
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F7F8FA] relative">
+        {/* Header */}
+        <div className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 flex items-center justify-between z-10 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600 shadow-sm border border-green-100">
+              <BookOpen size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900 leading-tight">{kb.name}</h2>
+              <p className="text-[11px] text-gray-400 font-medium">知识库对话助手 • 实时分析中</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all" title="对话设置">
+              <SlidersHorizontal size={18} />
+            </button>
+            <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all" title="清空对话" onClick={() => setMessages([])}>
+              <Trash2 size={18} />
+            </button>
+          </div>
+        </div>
+
         {/* Chat History */}
         <div 
           ref={scrollRef}
@@ -218,26 +261,22 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">
            <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
               {/* Controls Bar */}
-              <div className="px-4 py-2 bg-gray-50/30 border-b border-gray-50 flex items-center justify-between">
-                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-100 rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-all group">
-                       <Bot size={14} className="text-blue-500" />
-                       <span className="text-xs font-medium text-gray-700">deepseek-reasoner</span>
-                       <ChevronDown size={12} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+              <div className="px-4 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-blue-100 rounded-lg shadow-sm cursor-pointer hover:bg-blue-50 transition-all group">
+                       <Bot size={14} className="text-blue-600" />
+                       <span className="text-xs font-bold text-gray-700">deepseek-chat</span>
+                       <ChevronDown size={12} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
                     </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-100 rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-all group">
-                       <BookOpen size={14} className="text-green-500" />
-                       <span className="text-xs font-medium text-gray-700">1</span>
-                       <ChevronDown size={12} className="text-gray-400 group-hover:text-green-500 transition-colors" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm cursor-pointer hover:bg-blue-100 transition-all group">
+                       <BookOpen size={14} className="text-blue-600" />
+                       <span className="text-xs font-bold text-blue-700">{kb.name}</span>
+                       <div className="px-1 py-0.5 bg-blue-600 text-[8px] text-white rounded font-black uppercase">Active</div>
                     </div>
                     <div className="h-4 w-[1px] bg-gray-200 mx-1" />
-                    <div className="flex items-center gap-1 text-[11px] font-mono font-medium text-gray-400 bg-white px-2 py-1 rounded border border-gray-50">
+                    <div className="flex items-center gap-1 text-xs font-mono font-bold text-gray-400 bg-white px-2 py-1 rounded border border-gray-100">
                        <SlidersHorizontal size={12} />
                        <span>0.6</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] font-mono font-medium text-gray-400 bg-white px-2 py-1 rounded border border-gray-50">
-                       <SlidersHorizontal size={12} />
-                       <span>4000</span>
                     </div>
                  </div>
                  

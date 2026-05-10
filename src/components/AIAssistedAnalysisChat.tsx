@@ -22,7 +22,11 @@ import {
   X,
   ChevronRight,
   TableProperties,
-  Eye
+  Eye,
+  Type,
+  Hash,
+  Calendar,
+  Key
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,31 +39,31 @@ interface AIAssistedAnalysisChatProps {
 
 const MOCK_DATA_SOURCES = [
   { 
-    id: 'ds1', name: '标准审计数据库', type: 'MySQL', status: 'connected',
+    id: 'ds1', name: 'xxx县财政预算管理库', type: 'Oracle', status: 'connected',
     tables: [
-      { name: '财务凭证表', description: '记录所有财务账套凭证', fields: [{ name: 'voucher_id', type: 'VARCHAR(32)' }, { name: 'amount', type: 'DECIMAL(18,2)' }, { name: 'created_at', type: 'TIMESTAMP' }] },
-      { name: '报销明细表', description: '员工日常报销费用明细', fields: [{ name: 'expense_id', type: 'VARCHAR(32)' }, { name: 'emp_name', type: 'VARCHAR(64)' }, { name: 'status', type: 'INT' }] },
-      { name: '员工信息表', description: '包含在职及离职员工基础信息', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'department', type: 'VARCHAR(128)' }] }
+      { name: 't_budget_approval', description: '记录年度各部门、各预算科目的批复金额', fields: [{ name: 'approval_id', type: 'VARCHAR(32)', chineseName: '批复单号', businessMeaning: '财政局下达预算的唯一识别单号' }, { name: 'dept_code', type: 'VARCHAR(20)', chineseName: '部门编码', businessMeaning: '单位内部标准编码' }, { name: 'dept_name', type: 'VARCHAR(100)', chineseName: '部门名称', businessMeaning: '预算所属一级部门' }, { name: 'budget_year', type: 'INT', chineseName: '预算年度', businessMeaning: '资金归属的财政年度' }, { name: 'account_code', type: 'VARCHAR(30)', chineseName: '预算科目代码', businessMeaning: '政府统计支出科目编码' }, { name: 'account_name', type: 'VARCHAR(100)', chineseName: '预算科目名称', businessMeaning: '科目的具体名称描述' }, { name: 'approved_amount', type: 'DECIMAL(18,2)', chineseName: '批复金额', businessMeaning: '年初预算下达的计划总金额' }, { name: 'approver', type: 'VARCHAR(50)', chineseName: '批复部门', businessMeaning: '负责该预算下达的职能股室' }] },
+      { name: 't_budget_execution', description: '记录每一笔实际支出明细', fields: [{ name: 'execution_id', type: 'VARCHAR(32)', chineseName: '执行单号', businessMeaning: '支出的流水单号' }, { name: 'approval_id', type: 'VARCHAR(32)', chineseName: '批复单号', businessMeaning: '关联的预算批复单号' }, { name: 'amount', type: 'DECIMAL(18,2)', chineseName: '支出金额', businessMeaning: '实际支出的金额' }, { name: 'status', type: 'INT', chineseName: '单据状态', businessMeaning: '审批流状态(0草稿/1审批中/2通过)' }] },
+      { name: 't_budget_adjustment', description: '记录预算追加、调剂的审批信息', fields: [{ name: 'adjustment_id', type: 'VARCHAR(32)', chineseName: '调剂单号', businessMeaning: '预算调整的流水单号' }, { name: 'source_account_code', type: 'VARCHAR(30)', chineseName: '调出科目代码', businessMeaning: '调出资金的预算科目' }, { name: 'target_account_code', type: 'VARCHAR(30)', chineseName: '调入科目代码', businessMeaning: '调入资金的预算科目' }, { name: 'amount', type: 'DECIMAL(18,2)', chineseName: '调剂金额', businessMeaning: '调整的资金总额' }] }
     ],
     views: [
-      { name: '月度财务统计视图', description: '按月统计的财务凭证汇总视图', fields: [{ name: 'month', type: 'VARCHAR(7)' }, { name: 'total_amount', type: 'DECIMAL(18,2)' }] }
+      { name: 'v_budget_summary', description: '按年和部门统计的预算汇总视图', fields: [{ name: 'budget_year', type: 'INT', chineseName: '预算年度', businessMeaning: '汇总的财政年度' }, { name: 'dept_code', type: 'VARCHAR(20)', chineseName: '部门编码', businessMeaning: '汇总部门编码' }, { name: 'total_approved', type: 'DECIMAL(18,2)', chineseName: '总批复金额', businessMeaning: '该部门当年的总批复金额' }, { name: 'total_executed', type: 'DECIMAL(18,2)', chineseName: '总执行金额', businessMeaning: '该部门当年的总实际支出' }] }
     ]
   },
   { 
     id: 'ds2', name: '核心业务数据库', type: 'Oracle', status: 'connected',
     tables: [
-      { name: '订单交易表', description: '核心系统交易流水', fields: [{ name: 'order_id', type: 'VARCHAR(32)' }, { name: 'customer_id', type: 'VARCHAR(32)' }, { name: 'trade_time', type: 'TIMESTAMP' }] },
-      { name: '商品库存表', description: '各个仓库的商品实时库存', fields: [{ name: 'product_id', type: 'VARCHAR(32)' }, { name: 'quantity', type: 'INT' }, { name: 'warehouse_id', type: 'VARCHAR(32)' }] },
+      { name: '订单交易表', description: '核心系统交易流水', fields: [{ name: 'order_id', type: 'VARCHAR(32)', chineseName: '订单流水号', businessMeaning: '每笔交易的核心流水编号' }, { name: 'customer_id', type: 'VARCHAR(32)', chineseName: '客户编号', businessMeaning: '购买方客户的唯一标识' }, { name: 'trade_time', type: 'TIMESTAMP', chineseName: '交易时间', businessMeaning: '交易落库成交时间' }] },
+      { name: '商品库存表', description: '各个仓库的商品实时库存', fields: [{ name: 'product_id', type: 'VARCHAR(32)', chineseName: '商品编号', businessMeaning: 'SKU维度的商品编码' }, { name: 'quantity', type: 'INT', chineseName: '库存余量', businessMeaning: '实时可用库存数量' }, { name: 'warehouse_id', type: 'VARCHAR(32)', chineseName: '仓库代码', businessMeaning: '存放商品的逻辑仓或物理仓代码' }] },
     ],
     views: [
-      { name: '高风险交易视图', description: '金额超过阈值的异常交易', fields: [{ name: 'order_id', type: 'VARCHAR(32)' }, { name: 'risk_score', type: 'DECIMAL(5,2)' }] }
+      { name: '高风险交易视图', description: '金额超过阈值的异常交易', fields: [{ name: 'order_id', type: 'VARCHAR(32)', chineseName: '订单流水号', businessMeaning: '被标记为高危的交易流水号' }, { name: 'risk_score', type: 'DECIMAL(5,2)', chineseName: '风险评分', businessMeaning: '风控模型计算的异常概率(0-100)' }] }
     ]
   },
   { 
     id: 'ds3', name: '人力资源数据库', type: 'PostgreSQL', status: 'connected',
     tables: [
-      { name: '绩效考评表', description: '历年员工绩效考核结果', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'year', type: 'INT' }, { name: 'grade', type: 'VARCHAR(10)' }] },
-      { name: '薪资发放表', description: '员工薪酬发放流水', fields: [{ name: 'emp_id', type: 'VARCHAR(32)' }, { name: 'salary', type: 'DECIMAL(18,2)' }, { name: 'pay_date', type: 'DATE' }] },
+      { name: '绩效考评表', description: '历年员工绩效考核结果', fields: [{ name: 'emp_id', type: 'VARCHAR(32)', chineseName: '员工号', businessMeaning: '员工唯一标识' }, { name: 'year', type: 'INT', chineseName: '考核年度', businessMeaning: '考评对应的自然年度' }, { name: 'grade', type: 'VARCHAR(10)', chineseName: '绩效等级', businessMeaning: 'S/A/B/C/D等考核结果等级' }] },
+      { name: '薪资发放表', description: '员工薪酬发放流水', fields: [{ name: 'emp_id', type: 'VARCHAR(32)', chineseName: '员工号', businessMeaning: '收款员工内码' }, { name: 'salary', type: 'DECIMAL(18,2)', chineseName: '税前薪资', businessMeaning: '未扣除五险一金和个税的应发金额' }, { name: 'pay_date', type: 'DATE', chineseName: '发放日期', businessMeaning: '资金实际到账日期' }] },
     ],
     views: []
   }
@@ -101,6 +105,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
   const selectedDs = MOCK_DATA_SOURCES.find(ds => ds.id === selectedDsId);
   const popoverDs = MOCK_DATA_SOURCES.find(ds => ds.id === popoverSelectedDsId);
   const chatEndRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const filteredDatabases = MOCK_DATA_SOURCES.filter(ds => 
     ds.name.toLowerCase().includes(dbSearchQuery.toLowerCase())
@@ -112,6 +117,19 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
     }
   }, [showInputDsDropdown, selectedDsId]);
 
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowInputDsDropdown(false);
+      }
+    };
+    if (showInputDsDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showInputDsDropdown]);
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -321,7 +339,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
             <div className="px-4 pb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {/* DB Selector Trigger */}
-                <div className="relative">
+                <div className="relative" ref={dropdownRef}>
                   <button 
                     onClick={() => setShowInputDsDropdown(!showInputDsDropdown)}
                     className={cn(
@@ -460,7 +478,7 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
       {/* Table Structure Viewer Modal */}
       <AnimatePresence>
         {viewingTable && (
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="fixed top-14 right-0 bottom-0 left-0 z-[10000] flex justify-end">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -469,79 +487,91 @@ export default function AIAssistedAnalysisChat({ onLoadToEditor, onExecute }: AI
               className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              initial={{ x: '100%', opacity: 0.5 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0.5 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative bg-white w-full max-w-2xl h-full shadow-2xl flex flex-col border-l border-gray-100"
               style={{ fontFamily: 'Arial, "Microsoft YaHei", sans-serif' }}
             >
-              <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-xl z-20">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
-                    <TableProperties size={24} />
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/90 backdrop-blur-xl z-20 sticky top-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner shrink-0">
+                    <TableProperties size={18} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold text-gray-900 tracking-tight">{viewingTable.name}</h3>
+                      <h3 className="text-sm font-normal text-gray-900 tracking-tight line-clamp-1">{viewingTable.name}</h3>
                       <span className={cn(
-                        "text-[12px] font-bold px-1.5 py-0.5 rounded",
+                        "text-xs font-normal px-1.5 py-0.5 rounded shrink-0",
                         viewingTable.name.includes('视图') ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"
                       )}>
                         {viewingTable.name.includes('视图') ? 'VIEW' : 'TABLE'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5">{viewingTable.description || '元数据结构详情'}</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setViewingTable(null)}
-                  className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-all hover:rotate-90"
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-all hover:rotate-90 shrink-0 ml-2"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 text-[12px] font-bold text-gray-400 uppercase tracking-widest">
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50/30">
+                {viewingTable.description && (
+                  <div className="mb-4 flex items-start gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                    <Info size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-gray-600 leading-relaxed font-sans">{viewingTable.description}</p>
+                  </div>
+                )}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
+                  <table className="w-full text-left border-collapse whitespace-nowrap">
+                    <thead className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 text-xs font-normal text-gray-500 uppercase tracking-widest">
                       <tr>
-                        <th className="px-6 py-4">字段名称 (Name)</th>
-                        <th className="px-6 py-4">数据类型 (Type)</th>
-                        <th className="px-6 py-4 text-right">约束 (Constraint)</th>
+                        <th className="px-6 py-4 min-w-[200px]">字段名称 & 类型</th>
+                        <th className="px-6 py-4 w-16 text-center">主键</th>
+                        <th className="px-6 py-4">中文字典 (Title)</th>
+                        <th className="px-6 py-4">业务含义 (AI Mapping)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 font-mono">
-                      {viewingTable.fields.map((field: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-blue-50/10 transition-colors group text-sm">
-                          <td className="px-6 py-4">
-                            <span className="font-bold text-blue-600 uppercase italic">{field.name}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-[12px] font-medium text-gray-500">{field.type}</span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {idx === 0 && (
-                                <span className="px-1.5 py-0.5 bg-yellow-50 text-yellow-600 text-[12px] font-bold rounded uppercase">PK</span>
-                              )}
-                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 text-[12px] font-bold rounded uppercase">NULL</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                       {viewingTable.fields.map((field: any, idx: number) => {
+                         const typeName = field.type.split('(')[0];
+                         return (
+                         <tr key={idx} className="hover:bg-blue-50/10 transition-colors group text-sm">
+                           <td className="px-6 py-4">
+                             <div className="flex flex-col gap-1">
+                               <span className="font-normal text-gray-900 group-hover:text-blue-600 transition-colors uppercase">{field.name}</span>
+                               <div className="flex items-center gap-2">
+                                 <span className="text-xs font-normal py-0.5 px-2 bg-gray-100 text-gray-500 rounded-md uppercase">
+                                   {field.type}
+                                 </span>
+                                 {typeName === 'VARCHAR' ? <Type size={12} className="text-green-400" /> : 
+                                  typeName === 'DECIMAL' || typeName === 'INT' ? <Hash size={12} className="text-blue-400" /> : 
+                                  <Calendar size={12} className="text-purple-400" />}
+                               </div>
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 text-center">
+                             {idx === 0 && (
+                               <div className="inline-flex items-center justify-center w-6 h-6 bg-amber-50 rounded-lg text-amber-500 border border-amber-100 mx-auto">
+                                 <Key size={14} />
+                               </div>
+                             )}
+                           </td>
+                           <td className="px-6 py-4 font-sans">
+                             <span className="text-sm font-normal text-gray-700">{field.chineseName || '-'}</span>
+                           </td>
+                           <td className="px-6 py-4 font-sans max-w-[200px] truncate" title={field.businessMeaning}>
+                             <span className="text-xs font-normal text-gray-500">{field.businessMeaning || '-'}</span>
+                           </td>
+                         </tr>
+                       )})}
                     </tbody>
                   </table>
                 </div>
-              </div>
-
-              <div className="p-6 bg-white border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 z-20">
-                <button 
-                  onClick={() => setViewingTable(null)}
-                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition-all"
-                >
-                  关闭
-                </button>
               </div>
             </motion.div>
           </div>

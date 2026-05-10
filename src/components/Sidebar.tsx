@@ -108,7 +108,7 @@ const MENU_ITEMS: MenuItem[] = [
       { id: 'sys_user', label: '用户管理' },
       { id: 'sys_permission', label: '权限管理' },
       { id: 'sys_log', label: '日志查询' },
-      { id: 'sys_ops', label: '运维管理' }
+      { id: 'sys_ops', label: '综合管理' }
     ]
   },
 ];

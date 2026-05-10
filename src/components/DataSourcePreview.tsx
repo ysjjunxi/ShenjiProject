@@ -190,7 +190,7 @@ export default function DataSourcePreview() {
         <div className="p-6 border-b border-gray-100 bg-white">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">当前数据源</span>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">当前数据源</span>
               <div className="relative">
                 <select 
                   value={selectedDs}
@@ -222,9 +222,9 @@ export default function DataSourcePreview() {
           <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-2">
               <Table size={14} className="text-gray-400" />
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">数据库表目录</h4>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">数据库表目录</h4>
             </div>
-            <span className="text-[10px] bg-gray-200/50 text-gray-500 px-2 py-0.5 rounded-full font-bold tabular-nums">{filteredTables.length}</span>
+            <span className="text-xs bg-gray-200/50 text-gray-500 px-2 py-0.5 rounded-full font-bold tabular-nums">{filteredTables.length}</span>
           </div>
           
           <div className="space-y-1">
@@ -249,9 +249,9 @@ export default function DataSourcePreview() {
                   )}>
                     {table.chineseName}
                   </span>
-                  <span className="text-[10px] font-mono text-gray-400 tabular-nums shrink-0">{table.rows.toLocaleString()}</span>
+                  <span className="text-xs font-mono text-gray-400 tabular-nums shrink-0">{table.rows.toLocaleString()}</span>
                 </div>
-                <p className="text-[10px] font-mono text-gray-400 truncate mt-0.5 opacity-60">
+                <p className="text-xs font-mono text-gray-400 truncate mt-0.5 opacity-60">
                   {table.name}
                 </p>
               </button>
@@ -272,7 +272,7 @@ export default function DataSourcePreview() {
               className="flex-1 flex flex-col overflow-hidden"
             >
               {/* Toolbar Area */}
-              <div className="bg-white border-b border-gray-100 flex items-center justify-between px-8 h-16 shrink-0 shadow-sm z-10">
+              <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-8 h-16 shrink-0 shadow-sm sticky top-0 z-10">
                 <div className="flex items-center gap-2 p-1 bg-gray-100/80 rounded-xl border border-gray-200/50">
                   <button 
                     onClick={() => setActiveTab('structure')}
@@ -299,12 +299,12 @@ export default function DataSourcePreview() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-6 px-4 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">规模</span>
+                      <span className="text-xs font-bold text-gray-400 uppercase">规模</span>
                       <span className="text-xs font-bold text-gray-900 tabular-nums">{currentTableInfo?.rows.toLocaleString()}</span>
                     </div>
                     <div className="w-px h-3 bg-gray-200" />
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">字段</span>
+                      <span className="text-xs font-bold text-gray-400 uppercase">字段</span>
                       <span className="text-xs font-bold text-gray-900 tabular-nums">{currentTableInfo?.columns}</span>
                     </div>
                   </div>
@@ -323,10 +323,10 @@ export default function DataSourcePreview() {
 
               {/* Editable Table Header Info */}
               {activeTab === 'structure' && (
-                <div className="px-8 py-6 bg-white border-b border-gray-50">
+                <div className="px-8 py-[21px] bg-white border-b border-gray-50">
                   <div className="flex items-end gap-6 max-w-[1400px] mx-auto">
                     <div className="space-y-1.5 flex-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">数据表名称 (业务含义)</label>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">数据表名称 (业务含义)</label>
                       <input 
                         type="text"
                         value={currentTableInfo?.chineseName || ''}
@@ -336,7 +336,7 @@ export default function DataSourcePreview() {
                       />
                     </div>
                     <div className="space-y-1.5 flex-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">数据表备注描述</label>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">数据表备注描述</label>
                       <input 
                         type="text"
                         value={currentTableInfo?.description || ''}
@@ -364,7 +364,7 @@ export default function DataSourcePreview() {
                               <List size={14} />
                               字段层级定义
                             </h4>
-                            <span className="text-[10px] text-gray-400 font-medium">配置字典后有助于 AI 更精准理解业务含义</span>
+                            <span className="text-xs text-gray-400 font-medium">配置字典后有助于 AI 更精准理解业务含义</span>
                           </div>
                           
                           <div className="flex items-center gap-3">
@@ -393,11 +393,11 @@ export default function DataSourcePreview() {
                             <table className="w-full text-left border-collapse">
                               <thead>
                                 <tr className="bg-gray-50/50 border-b border-gray-100">
-                                  <th className="px-6 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-wider min-w-[200px]">字段名称 & 类型</th>
-                                  <th className="px-6 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-wider w-16 text-center">主键</th>
-                                  <th className="px-6 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">源注释</th>
-                                  <th className="px-6 py-5 text-[10px] font-bold text-blue-500 uppercase tracking-wider bg-blue-50/30">配置: 字典名称</th>
-                                  <th className="px-6 py-5 text-[10px] font-bold text-blue-500 uppercase tracking-wider bg-blue-50/30">配置: 业务含义 (AI 映射基础)</th>
+                                  <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider min-w-[200px]">字段名称 & 类型</th>
+                                  <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider w-16 text-center">主键</th>
+                                  <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">源注释</th>
+                                  <th className="px-6 py-5 text-xs font-bold text-blue-500 uppercase tracking-wider bg-blue-50/30">配置: 字典名称</th>
+                                  <th className="px-6 py-5 text-xs font-bold text-blue-500 uppercase tracking-wider bg-blue-50/30">配置: 业务含义 (AI 映射基础)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-50">
@@ -407,7 +407,7 @@ export default function DataSourcePreview() {
                                       <div className="flex flex-col gap-1">
                                         <span className="text-sm font-mono font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{col.name}</span>
                                         <div className="flex items-center gap-2">
-                                          <span className="text-[10px] font-bold py-0.5 px-2 bg-gray-100 text-gray-500 rounded-md uppercase">
+                                          <span className="text-xs font-bold py-0.5 px-2 bg-gray-100 text-gray-500 rounded-md uppercase">
                                             {col.type} {col.length ? `(${col.length})` : ''}
                                           </span>
                                           {col.type === 'VARCHAR' ? <Type size={12} className="text-green-400" /> : 
@@ -469,7 +469,7 @@ export default function DataSourcePreview() {
                             </h4>
                             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
                               <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Read Only 实时模式</span>
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">Read Only 实时模式</span>
                             </div>
                           </div>
                           
@@ -479,7 +479,7 @@ export default function DataSourcePreview() {
                               <input 
                                 type="text"
                                 placeholder="在当前预览中过滤..."
-                                className="h-9 bg-white border border-gray-200 rounded-xl pl-9 pr-4 text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 min-w-[200px]"
+                                className="h-9 bg-white border border-gray-200 rounded-xl pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 min-w-[200px]"
                               />
                             </div>
                             <button className="px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-xs font-bold flex items-center gap-2">
@@ -496,10 +496,10 @@ export default function DataSourcePreview() {
                               <thead>
                                 <tr className="bg-gray-50/50 border-b border-gray-100">
                                   {currentColumns.map(col => (
-                                    <th key={col.name} className="px-6 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                    <th key={col.name} className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">
                                       <div className="flex flex-col gap-1">
                                         <span className="text-gray-900 border-b border-gray-100 pb-1 mb-1 font-bold">{col.chineseName || '未命名'}</span>
-                                        <span className="font-mono text-[9px] opacity-60 flex items-center gap-1">
+                                        <span className="font-mono text-xs opacity-60 flex items-center gap-1">
                                           <Hash size={8} /> {col.name}
                                         </span>
                                       </div>
@@ -518,7 +518,7 @@ export default function DataSourcePreview() {
                                           </div>
                                         ) : col.name === 'is_compliant' || col.name === 'has_approval_doc' || col.name === 'has_explanation' ? (
                                           <div className={cn(
-                                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border",
                                             row[col.name] === 1 ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
                                           )}>
                                             <div className={cn("w-1 h-1 rounded-full", row[col.name] === 1 ? "bg-green-500" : "bg-red-500")} />
@@ -544,11 +544,11 @@ export default function DataSourcePreview() {
                           <div className="px-8 py-5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
                             <div className="flex items-center gap-6">
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">每页显示规模</span>
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">每页显示规模</span>
                                 <select 
                                   value={pageSize}
                                   onChange={(e) => setPageSize(Number(e.target.value))}
-                                  className="h-8 bg-white border border-gray-200 rounded-lg px-2 text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                                  className="h-8 bg-white border border-gray-200 rounded-lg px-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10"
                                 >
                                   <option value={10}>10</option>
                                   <option value={20}>20</option>

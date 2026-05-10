@@ -100,7 +100,7 @@ export default function AuditModelDetail({ model, onBack, onUpdate }: AuditModel
               <h2 className="text-xl font-normal text-gray-900 tracking-tight">{model.name}</h2>
               <button 
                 onClick={() => setShowVersionModal(true)}
-                className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-wider border border-blue-100 hover:bg-blue-100 transition-all"
+                className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-full uppercase tracking-wider border border-blue-100 hover:bg-blue-100 transition-all"
               >
                 {model.version}
               </button>
@@ -192,7 +192,7 @@ export default function AuditModelDetail({ model, onBack, onUpdate }: AuditModel
               </div>
               <div className="p-0 max-h-[60vh] overflow-y-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-[10px] text-gray-400 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100 sticky top-0">
+                  <thead className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100 sticky top-0">
                     <tr>
                       <th className="px-8 py-4 font-normal">版本号</th>
                       <th className="px-8 py-4 font-normal">修改记录</th>
@@ -206,9 +206,9 @@ export default function AuditModelDetail({ model, onBack, onUpdate }: AuditModel
                       <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-8 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="font-normal text-gray-900">{v.version}</span>
+                            <span className="font-arial text-gray-900">{v.version}</span>
                             {v.isDefault && (
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded uppercase border border-blue-100">DEFAULT</span>
+                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-xs font-bold rounded uppercase border border-blue-100">DEFAULT</span>
                             )}
                           </div>
                         </td>
@@ -273,7 +273,7 @@ function BasicInfoTab({ model }: { model: AuditModel }) {
         </p>
         <div className="pt-4">
           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">调用地址</h4>
-          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100 font-mono text-[11px] text-gray-500">
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100 font-mono text-xs text-gray-500">
             <Link size={14} className="shrink-0" />
             <span className="truncate flex-1">{model.callUrl || '未生成调用地址'}</span>
           </div>
@@ -302,11 +302,11 @@ function KnowledgeBaseTab({ model }: { model: AuditModel }) {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">包含文档</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">包含文档</p>
                 <p className="text-sm font-bold text-gray-900">{kb.docCount} 份</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">存储类型</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">存储类型</p>
                 <p className="text-sm font-bold text-indigo-600">{kb.storageType}</p>
               </div>
             </div>
@@ -387,7 +387,7 @@ function CheckpointsTab({ model }: { model: AuditModel }) {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {table.fields.map(f => (
-                        <span key={f} className="px-2.5 py-1 bg-gray-50 text-gray-500 text-[10px] font-mono rounded-lg border border-gray-100">
+                        <span key={f} className="px-2.5 py-1 bg-gray-50 text-gray-500 text-xs font-mono rounded-lg border border-gray-100">
                           {f}
                         </span>
                       ))}

@@ -13,6 +13,7 @@ import {
   Filter,
   MoreVertical,
   ChevronRight,
+  ChevronDown,
   AlertCircle,
   Download,
   Edit2,
@@ -25,7 +26,8 @@ import {
   Check,
   BookOpen,
   Database,
-  Table2
+  Table2,
+  Terminal
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { 
@@ -47,6 +49,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { approvalStore } from '../data/mockApprovals';
+import { MOCK_TEMPLATES } from '../data/mockTemplates';
 
 interface AuditProjectDetailProps {
   projectId: string;
@@ -873,9 +876,6 @@ xxx县2025年度县级本级预算编制及规范，<strong>预算执行、决�
             <BrainCircuit size={16} className="text-orange-500" />
             智能文书编写
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all text-sm">
-            导出项目包
-          </button>
           <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 text-sm">
             完成归档
           </button>
@@ -942,7 +942,7 @@ xxx县2025年度县级本级预算编制及规范，<strong>预算执行、决�
               {activeTab === 'suspicion' && <SuspicionTab suspicions={suspicions} onGenerateEvidence={handleGenerateEvidence} />}
               {activeTab === 'evidence' && <EvidenceTab evidences={evidences} setEvidences={setEvidences} onGenerateWorkingPaper={(selectedIds, templateId) => handleGenerateWorkingPaper(selectedIds, templateId)} />}
               {activeTab === 'working_paper' && <WorkingPaperTab papers={workingPapers} setPapers={setWorkingPapers} />}
-              {activeTab === 'report' && <ReportTab initialReports={initialReports} />}
+              {activeTab === 'report' && <ReportTab initialReports={initialReports} papers={workingPapers} />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -1378,7 +1378,7 @@ function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: Rule
               <Edit2 size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-normal tracking-tight text-gray-900">编辑业务审查点</h3>
+              <h3 className="text-lg font-normal tracking-tight text-gray-900">编辑</h3>
               <p className="text-xs text-gray-500 mt-0.5">配置校验逻辑与处罚依据</p>
             </div>
           </div>
@@ -1388,198 +1388,136 @@ function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: Rule
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          {/* Name */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">审查点名称</label>
-            <input 
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full h-12 bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-bold"
-            />
-          </div>
-
-          {/* Logic Blocks */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <BrainCircuit size={14} className="text-orange-500" />
-                校验逻辑配置
-              </label>
-              <button 
-                onClick={() => {
-                  const newBlock: LogicBlock = {
-                    id: 'lb_' + Date.now(),
-                    leftTerm: '',
-                    operator: '>',
-                    rightTerm: '',
-                    rightType: 'param',
-                    relation: 'AND'
-                  };
-                  setFormData({ ...formData, logicBlocks: [...formData.logicBlocks, newBlock] });
-                }}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-3 py-1.5 bg-blue-50 rounded-lg transition-all"
-              >
-                <Plus size={14} />
-                添加条件
-              </button>
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-widest"><Terminal size={14} className="inline mr-1 text-orange-500" /> 逻辑块配置</label>
+              <button onClick={() => {
+                const logicGroups = [...(formData.logicGroups || []), {
+                  id: 'lg_' + Date.now(),
+                  relation: 'AND',
+                  logicBlocks: [{ id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param' as const, relation: 'AND' }],
+                  penaltyBasis: { source: '', chapter: '', content: '' }
+                }];
+                setFormData({ ...formData, logicGroups });
+              }} className="text-xs bg-orange-100 text-orange-600 px-3 py-1.5 rounded hover:bg-orange-200 transition-colors">+ 添加新逻辑块</button>
             </div>
             
-            <div className="space-y-4 relative pl-8 before:absolute before:left-[15px] before:top-4 before:bottom-4 before:w-px before:bg-gray-200">
-              {formData.logicBlocks.map((lb, idx) => (
-                <div key={lb.id} className="relative group/lb">
-                  {/* Relation Selector */}
-                  {idx > 0 && (
-                    <div className="absolute -left-[33px] top-1/2 -translate-y-1/2 z-10">
+            <div className="space-y-8">
+              {formData.logicGroups?.map((lg, lgIndex) => (
+                <div key={lg.id} className="p-4 bg-white rounded-xl border border-orange-200 shadow-sm relative group/lg">
+                  {lgIndex > 0 && (
+                    <div className="absolute -top-[16px] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden z-20">
                       <select 
-                        value={lb.relation}
+                        value={lg.relation} 
                         onChange={(e) => {
-                          const newBlocks = [...formData.logicBlocks];
-                          newBlocks[idx].relation = e.target.value;
-                          setFormData({ ...formData, logicBlocks: newBlocks });
+                          const logicGroups = [...formData.logicGroups!];
+                          logicGroups[lgIndex] = { ...logicGroups[lgIndex], relation: e.target.value };
+                          setFormData({ ...formData, logicGroups });
                         }}
-                        className="h-8 w-10 bg-white border border-gray-200 rounded-lg text-[12px] font-bold text-blue-600 outline-none text-center shadow-sm cursor-pointer hover:border-blue-300 transition-all appearance-none"
+                        className="text-xs font-bold text-orange-600 outline-none w-12 text-center cursor-pointer py-1 bg-transparent hover:bg-orange-50 transition-colors appearance-none"
+                        style={{ textAlignLast: 'center' }}
                       >
                         <option value="AND">且</option>
                         <option value="OR">或</option>
                       </select>
                     </div>
                   )}
-
-                  <div className="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 flex flex-wrap items-center gap-3 transition-all hover:bg-white hover:border-blue-100 hover:shadow-md group">
-                    <input 
-                      placeholder="变量 (如: 合同金额)" 
-                      value={lb.leftTerm}
-                      onChange={(e) => {
-                        const newBlocks = [...formData.logicBlocks];
-                        newBlocks[idx].leftTerm = e.target.value;
-                        setFormData({ ...formData, logicBlocks: newBlocks });
-                      }}
-                      className="flex-1 min-w-[150px] h-10 bg-white border border-gray-200 rounded-lg px-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
-                    />
-                    <select 
-                      value={lb.operator}
-                      onChange={(e) => {
-                        const newBlocks = [...formData.logicBlocks];
-                        newBlocks[idx].operator = e.target.value;
-                        setFormData({ ...formData, logicBlocks: newBlocks });
-                      }}
-                      className="h-10 w-16 bg-white border border-gray-200 rounded-lg text-[12px] font-bold text-center outline-none focus:ring-2 focus:ring-blue-500/10"
-                    >
-                      <option value=">">&gt;</option>
-                      <option value="<">&lt;</option>
-                      <option value=">=">&gt;=</option>
-                      <option value="<=">&lt;=</option>
-                      <option value="==">==</option>
-                      <option value="!=">!=</option>
-                    </select>
-                    <input 
-                      placeholder="比较值" 
-                      value={lb.rightTerm}
-                      onChange={(e) => {
-                        const newBlocks = [...formData.logicBlocks];
-                        newBlocks[idx].rightTerm = e.target.value;
-                        setFormData({ ...formData, logicBlocks: newBlocks });
-                      }}
-                      className="flex-1 min-w-[150px] h-10 bg-white border border-gray-200 rounded-lg px-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
-                    />
+                  <button onClick={() => {
+                    const logicGroups = [...formData.logicGroups!];
+                    logicGroups.splice(lgIndex, 1);
+                    setFormData({ ...formData, logicGroups });
+                  }} className="absolute -top-3 -right-3 w-6 h-6 bg-red-100 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover/lg:opacity-100 transition-opacity hover:bg-red-200 shadow-sm z-20">
+                    <X size={12} />
+                  </button>
+                  
+                  <div className="flex items-center justify-between mb-4 mt-2">
+                     <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Terminal size={14} className="text-orange-500" /> 规则校验逻辑块 ({lgIndex + 1})</label>
+                     <button onClick={() => {
+                       const logicGroups = [...formData.logicGroups!];
+                       logicGroups[lgIndex].logicBlocks.push({ id: 'lb_' + Date.now(), leftTerm: '', operator: '>', rightTerm: '', rightType: 'param' as const, relation: 'AND' });
+                       setFormData({ ...formData, logicGroups });
+                     }} className="text-xs font-medium text-orange-600 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">+ 添加校验条件</button>
+                  </div>
+                  <div className="relative pl-12 pt-4 pb-4 bg-gray-50/50 rounded-2xl border border-gray-100 shadow-sm pr-4 mb-4">
+                    {lg.logicBlocks.length > 1 && (
+                      <div className="absolute left-[20px] top-10 bottom-10 w-px bg-gray-300"></div>
+                    )}
                     
-                    <div className="flex items-center gap-3 px-3 py-2 bg-white rounded-lg border border-gray-100">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={lb.rightType === 'param'}
-                          onChange={(e) => {
-                            const newBlocks = [...formData.logicBlocks];
-                            newBlocks[idx].rightType = e.target.checked ? 'param' : 'fixed';
-                            setFormData({ ...formData, logicBlocks: newBlocks });
-                          }}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">参数化</span>
-                      </label>
-                      {lb.rightType === 'param' && (
-                        <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
-                          <input 
-                            placeholder="单位" 
-                            value={lb.paramUnit || ''}
-                            onChange={(e) => {
-                              const newBlocks = [...formData.logicBlocks];
-                              newBlocks[idx].paramUnit = e.target.value;
-                              setFormData({ ...formData, logicBlocks: newBlocks });
-                            }}
-                            className="w-12 h-7 bg-gray-50 border border-gray-200 rounded px-2 text-[12px] outline-none"
-                          />
-                        </div>
-                      )}
+                    {lg.logicBlocks.map((lb, bIdx) => (
+                      <div key={lb.id} className="relative mb-4 last:mb-0 group/lbwrapper z-10">
+                         {bIdx > 0 && (
+                           <div className="absolute -left-[28px] top-1/2 w-[28px] h-px bg-gray-300 -z-10"></div>
+                         )}
+                         
+                         {bIdx > 0 && (
+                           <div className="absolute -left-[40px] top-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden group-hover/lbwrapper:border-orange-400 transition-colors z-20">
+                              <select 
+                                value={lb.relation} 
+                                onChange={(e) => {
+                                  const logicGroups = [...formData.logicGroups!];
+                                  logicGroups[lgIndex].logicBlocks[bIdx] = { ...logicGroups[lgIndex].logicBlocks[bIdx], relation: e.target.value };
+                                  setFormData({ ...formData, logicGroups });
+                                }}
+                                className="text-xs font-bold text-orange-600 outline-none w-10 text-center cursor-pointer py-1 bg-transparent hover:bg-orange-50 transition-colors appearance-none"
+                                style={{ textAlignLast: 'center' }}
+                              >
+                                <option value="AND">且</option>
+                                <option value="OR">或</option>
+                              </select>
+                           </div>
+                         )}
+                         
+                         <div className="w-full flex items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-orange-300 transition-colors group/lb">
+                           <input placeholder="变量A (如: 合同金额)" value={lb.leftTerm} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], leftTerm: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-1/3 min-w-[120px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
+                           <select value={lb.operator} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], operator: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-16 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-2 py-1.5 text-xs outline-none font-mono font-bold text-center transition-all appearance-none">
+                             <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option><option value="==">==</option><option value="!=">!=</option>
+                           </select>
+                           <input placeholder="变量B / 固定值" value={lb.rightTerm} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], rightTerm: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="flex-1 min-w-[100px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
+                           
+                           <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                           
+                           <div className="flex gap-2 items-center shrink-0">
+                             <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+                               <input type="checkbox" checked={lb.rightType==='param'} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], rightType: e.target.checked?'param':'fixed' }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-3.5 h-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-500" />
+                               参数化
+                             </label>
+                           </div>
+                           
+                           {lb.rightType === 'param' && (
+                             <div className="flex gap-1.5 items-center shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-100">
+                                <input placeholder="默认值(如 5)" value={lb.paramValue||''} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramValue: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-16 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
+                                <input placeholder="下限~上限" value={lb.paramRangeMin || lb.paramRangeMax ? `${lb.paramRangeMin||''}~${lb.paramRangeMax||''}` : ''} onChange={e => { const lgs = [...formData.logicGroups!]; const parts = e.target.value.split('~'); lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramRangeMin: parts[0]||'', paramRangeMax: parts[1]||'' }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" title="输入格式: 下限~上限" />
+                                <input placeholder="单位" value={lb.paramUnit||''} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramUnit: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-12 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
+                             </div>
+                           )}
+                           
+                           <button onClick={() => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks.splice(bIdx, 1); setFormData({ ...formData, logicGroups: lgs}); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-1 opacity-0 group-hover/lb:opacity-100"><X size={16}/></button>
+                         </div>
+                      </div>
+                    ))}
+                    {lg.logicBlocks.length === 0 && <p className="text-xs text-center text-gray-400 py-4">暂无校验逻辑，请添加</p>}
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 mb-3"><BookOpen size={14} className="text-green-500" /> 处罚与定性依据</label>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 block mb-1">法规来源</span>
+                        <input className="w-full bg-gray-50 border border-transparent hover:border-gray-300 focus:border-green-500 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" value={lg.penaltyBasis.source} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].penaltyBasis.source = e.target.value; setFormData({ ...formData, logicGroups: lgs}); }} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 block mb-1">章节条款</span>
+                        <input className="w-full bg-gray-50 border border-transparent hover:border-gray-300 focus:border-green-500 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" value={lg.penaltyBasis.chapter} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].penaltyBasis.chapter = e.target.value; setFormData({ ...formData, logicGroups: lgs}); }} />
+                      </div>
                     </div>
-
-                    <button 
-                      onClick={() => {
-                        const newBlocks = [...formData.logicBlocks];
-                        newBlocks.splice(idx, 1);
-                        setFormData({ ...formData, logicBlocks: newBlocks });
-                      }}
-                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 block mb-1">依据原文</span>
+                      <textarea rows={2} className="w-full bg-gray-50 border border-transparent hover:border-gray-300 focus:border-green-500 focus:bg-white rounded-lg px-3 py-2 text-xs outline-none transition-all resize-none" value={lg.penaltyBasis.content} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].penaltyBasis.content = e.target.value; setFormData({ ...formData, logicGroups: lgs}); }} />
+                    </div>
                   </div>
                 </div>
               ))}
-              {formData.logicBlocks.length === 0 && (
-                <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400">
-                  尚未配置任何校验逻辑
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Basis */}
-          <div className="space-y-4">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <BookOpen size={14} className="text-green-500" />
-              处罚与定性依据
-            </label>
-            <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">法规来源</span>
-                  <input 
-                    type="text"
-                    value={formData.penaltyBasis.source}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      penaltyBasis: { ...formData.penaltyBasis, source: e.target.value } 
-                    })}
-                    className="w-full h-10 bg-white border border-gray-200 rounded-xl px-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">章节条款</span>
-                  <input 
-                    type="text"
-                    value={formData.penaltyBasis.chapter}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      penaltyBasis: { ...formData.penaltyBasis, chapter: e.target.value } 
-                    })}
-                    className="w-full h-10 bg-white border border-gray-200 rounded-xl px-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">依据原文</span>
-                <textarea 
-                  rows={4}
-                  value={formData.penaltyBasis.content}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    penaltyBasis: { ...formData.penaltyBasis, content: e.target.value } 
-                  })}
-                  className="w-full bg-white border border-gray-200 rounded-2xl p-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 resize-none leading-relaxed"
-                />
-              </div>
+              {(!formData.logicGroups || formData.logicGroups.length === 0) && <p className="text-sm text-center text-gray-400 py-8 bg-gray-50 border border-dashed border-gray-200 rounded-xl">未配置任何逻辑块</p>}
             </div>
           </div>
         </div>
@@ -1675,7 +1613,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
           <div className="w-[1px] h-8 bg-gray-100" />
           <div className="flex flex-col">
             <span className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-1">数据范围</span>
-            <span className="text-sm font-bold text-gray-900">{project.period}</span>
+            <span className="text-sm font-normal text-gray-900">{project.period}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -1743,7 +1681,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                       </div>
                       <div className="space-y-2">
                         {rule.fixedCheckpoints.map((cp, idx) => (
-                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-gray-100">
                             <p className="text-xs font-bold text-gray-800">{cp.name}</p>
                             <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">{cp.description}</p>
                           </div>
@@ -1757,19 +1695,35 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">
                         <div className="w-1 h-3 bg-orange-400 rounded-full" />
-                        可配置业务审查点
+                        可配置业务规则
                       </div>
                       <div className="space-y-2">
                         {rule.configurableCheckpoints.map((cp, idx) => (
-                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-gray-100 shadow-sm group">
+                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-gray-100 group">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <p className="text-xs font-bold text-gray-800">{cp.name}</p>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {cp.logicBlocks.map((lb, lIdx) => (
-                                    <span key={lIdx} className="px-1.5 py-0.5 bg-orange-50 text-orange-600 text-[12px] rounded border border-orange-100 font-mono">
-                                      {lb.leftTerm} {lb.operator} {lb.rightTerm}{lb.paramUnit || ''}
-                                    </span>
+                                <div className="flex flex-col gap-2 mt-2">
+                                  {cp.logicGroups?.map((lg, lgIdx) => (
+                                    <React.Fragment key={lg.id}>
+                                      {lgIdx > 0 && (
+                                        <div className="flex items-center">
+                                          <span className="px-1.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded uppercase">{lg.relation}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex flex-wrap gap-1.5 p-1.5">
+                                        {lg.logicBlocks.map((lb, lIdx, arr) => (
+                                          <div key={lb.id} className="flex items-center gap-1">
+                                            <span className="text-gray-700 text-[12px] font-mono">
+                                              {lb.leftTerm} <span className="text-blue-500 font-bold">{lb.operator}</span> {lb.rightTerm}{lb.paramUnit || ''}
+                                            </span>
+                                            {lIdx < arr.length - 1 && (
+                                              <span className="text-[10px] text-blue-500 font-bold ml-1">{lb.relation}</span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </React.Fragment>
                                   ))}
                                 </div>
                               </div>
@@ -1783,7 +1737,9 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                                 <Edit2 size={12} />
                               </button>
                             </div>
-                            <p className="text-[12px] text-gray-400 italic mt-2 border-t border-gray-50 pt-2">依据：{cp.penaltyBasis.source}</p>
+                            {cp.logicGroups?.map((lg, lgIdx) => (
+                              <p key={lgIdx} className="text-[12px] text-gray-400 italic mt-2 border-t border-gray-50 pt-2 break-all">依据：{lg.penaltyBasis.source} {lg.penaltyBasis.chapter}</p>
+                            ))}
                           </div>
                         ))}
                       </div>
@@ -2587,28 +2543,18 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
             >
               <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">查看取证单</h3>
+                  <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">查看审计取证单</h3>
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded uppercase tracking-widest">
                     V{viewingEvidence.version}.0
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => handlePrint()}
+                    onClick={handlePrint}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                   >
                     <Download size={14} />
                     <span>导出PDF / 打印</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setEditingEvidence(viewingEvidence);
-                      setViewingEvidence(null);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Edit2 size={14} />
-                    <span>编辑</span>
                   </button>
                   <button onClick={() => setViewingEvidence(null)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                     <X size={20}/>
@@ -2618,7 +2564,7 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
               <div className="flex-1 overflow-y-auto p-6 bg-white">
                 <div ref={contentRef} className="max-w-3xl mx-auto prose prose-blue prose-sm md:prose-base prose-td:border-gray-800 prose-th:border-gray-800">
                   {viewingEvidence.content ? (
-                    <ReactMarkdown remarkPlugins={[remarkBreaks]} rehypePlugins={[rehypeRaw]}>{viewingEvidence.content}</ReactMarkdown>
+                    <div dangerouslySetInnerHTML={{ __html: viewingEvidence.content }} />
                   ) : (
                     <div className="text-center text-gray-400 py-12">暂无内容</div>
                   )}
@@ -2644,7 +2590,7 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
               className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] overflow-hidden flex flex-col"
             >
               <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">编辑取证单</h3>
+                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">编辑审计取证单</h3>
                 <button onClick={() => setEditingEvidence(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X size={20}/>
                 </button>
@@ -2661,12 +2607,11 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
                   />
                 </div>
                 <div className="flex-1 p-6 overflow-hidden flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">取证单内容 (Markdown)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">取证内容 (HTML)</label>
                   <textarea 
                     value={editingEvidence.content}
                     onChange={e => setEditingEvidence({...editingEvidence, content: e.target.value})}
                     className="flex-1 w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all resize-none"
-                    placeholder="请输入 Markdown 格式的取证单内容..."
                   />
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
@@ -2679,7 +2624,7 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
                   </button>
                   <button 
                     type="submit"
-                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
+                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                   >
                     保存修改
                   </button>
@@ -2688,53 +2633,52 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col"
             >
               <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">选择底稿模板</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">选择审计底稿模版</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X size={20}/>
                 </button>
               </div>
-              <div className="p-6">
-                <div className="space-y-3">
-                  {[
-                    { id: 'wp1', name: '通用底稿模板', desc: '适用于常规审计事项的底稿编制' }
-                  ].map(template => (
-                    <div 
-                      key={template.id}
-                      onClick={() => setSelectedTemplate(template.id)}
-                      className={cn(
-                        "p-4 rounded-xl border-2 cursor-pointer transition-all",
-                        selectedTemplate === template.id 
-                          ? "border-blue-600 bg-blue-50/50" 
-                          : "border-gray-100 hover:border-blue-200 hover:bg-gray-50"
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-gray-900">{template.name}</h4>
-                        {selectedTemplate === template.id && (
-                          <CheckCircle2 size={18} className="text-blue-600" />
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500">{template.desc}</p>
-                    </div>
-                  ))}
+              <div className="p-6 space-y-4">
+                <div 
+                  onClick={() => setSelectedTemplate('wp1')}
+                  className={cn(
+                    "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3",
+                    selectedTemplate === 'wp1' ? "border-blue-600 bg-blue-50/50" : "border-gray-100 hover:border-blue-200 hover:bg-gray-50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0",
+                    selectedTemplate === 'wp1' ? "border-blue-600 bg-blue-600" : "border-gray-300 bg-white"
+                  )}>
+                    {selectedTemplate === 'wp1' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">常规审计底稿模版</h4>
+                    <p className="text-xs text-gray-500 mt-1">包含审计依据、审计重点、审计核实过程及审计结论等标准模块。</p>
+                  </div>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                 <button 
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   取消
                 </button>
@@ -2744,7 +2688,7 @@ function EvidenceTab({ evidences, setEvidences, onGenerateWorkingPaper }: { evid
                     setIsModalOpen(false);
                     setSelectedIds([]);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm shadow-blue-500/20"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                 >
                   确认生成
                 </button>
@@ -2775,7 +2719,7 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${viewingPaper?.title || '审计工作底稿'}</title>
+          <title>${viewingPaper?.title || '审计底稿'}</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @media print {
@@ -2786,8 +2730,8 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
             table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
             th, td { border: 1px solid #1f2937; padding: 0.75rem; text-align: left; }
             th { background-color: #f9fafb; font-weight: 600; }
-            p { margin-bottom: 0.5rem; }
-            h1, h2, h3, h4, h5, h6 { margin-top: 1.5rem; margin-bottom: 0.5rem; font-weight: 600; }
+            p { margin-bottom: 0.8rem; }
+            h1, h2, h3, h4, h5, h6 { margin-top: 1.5rem; margin-bottom: 1rem; font-weight: 600; }
           </style>
         </head>
         <body class="bg-white p-6 text-gray-900">
@@ -2811,79 +2755,66 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingPaper) {
-      setPapers(papers.map(wp => wp.id === editingPaper.id ? editingPaper : wp));
+      setPapers(papers.map(p => p.id === editingPaper.id ? editingPaper : p));
       setEditingPaper(null);
     }
   };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+      <div className="p-6 border-b border-gray-100">
         <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">审计底稿管理</h3>
       </div>
-      
-      {papers.length === 0 ? (
-        <div className="p-12 text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileCheck size={32} className="text-gray-300" />
-          </div>
-          <h4 className="text-lg font-medium text-gray-900">暂无审计底稿</h4>
-          <p className="text-gray-500 mt-1 max-w-sm mx-auto">
-            您可以基于已生成的取证单快速生成审计底稿，或手动创建。
-          </p>
-        </div>
-      ) : (
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {papers.map((paper) => (
-              <div 
-                key={paper.id} 
-                onClick={() => setViewingPaper(paper)}
-                className="p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:shadow-md transition-all group cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                      <FileCheck size={20} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{paper.title}</h4>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">V{paper.version}.0</p>
-                    </div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {papers.map((paper) => (
+            <div 
+              key={paper.id} 
+              onClick={() => setViewingPaper(paper)}
+              className="p-4 border border-gray-100 rounded-xl hover:shadow-md transition-all group cursor-pointer relative"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <FileCheck size={20} />
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setViewingPaper(paper); }}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
-                      title="查看"
-                    >
-                      <Eye size={14} />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setEditingPaper(paper); }}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
-                      title="编辑"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setPapers(papers.filter(p => p.id !== paper.id)); }}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
-                      title="删除"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{paper.title}</h4>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">V{paper.version}.0</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-gray-500">
-                  <span>编制人：张审计</span>
-                  <span>最后更新：{new Date(paper.updatedAt).toLocaleString()}</span>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setViewingPaper(paper); }}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                    title="查看"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setEditingPaper(paper); }}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                    title="编辑"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setPapers(papers.filter(p => p.id !== paper.id)); }}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
+                    title="删除"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center justify-between text-[11px] text-gray-500">
+                <span>编制人：张审计</span>
+                <span>最后更新：{new Date(paper.updatedAt).toLocaleString()}</span>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
       <AnimatePresence>
         {viewingPaper && (
@@ -2910,7 +2841,7 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => handlePrint()}
+                    onClick={handlePrint}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                   >
                     <Download size={14} />
@@ -2934,7 +2865,7 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
               <div className="flex-1 overflow-y-auto p-6 bg-white">
                 <div ref={contentRef} className="max-w-3xl mx-auto prose prose-blue prose-sm md:prose-base prose-td:border-gray-800 prose-th:border-gray-800">
                   {viewingPaper.content ? (
-                    <ReactMarkdown remarkPlugins={[remarkBreaks]} rehypePlugins={[rehypeRaw]}>{viewingPaper.content}</ReactMarkdown>
+                    <div dangerouslySetInnerHTML={{ __html: viewingPaper.content }} />
                   ) : (
                     <div className="text-center text-gray-400 py-12">暂无内容</div>
                   )}
@@ -2977,12 +2908,12 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
                   />
                 </div>
                 <div className="flex-1 p-6 overflow-hidden flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">底稿内容 (Markdown)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">底稿内容 (HTML)</label>
                   <textarea 
                     value={editingPaper.content}
                     onChange={e => setEditingPaper({...editingPaper, content: e.target.value})}
                     className="flex-1 w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all resize-none"
-                    placeholder="请输入 Markdown 格式的底稿内容..."
+                    placeholder="请输入 HTML 格式的底稿内容..."
                   />
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
@@ -2995,7 +2926,7 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
                   </button>
                   <button 
                     type="submit"
-                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
+                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                   >
                     保存修改
                   </button>
@@ -3009,12 +2940,19 @@ function WorkingPaperTab({ papers, setPapers }: { papers: WorkingPaper[], setPap
   );
 }
 
-function ReportTab({ initialReports }: { initialReports: AuditReport[] }) {
+function ReportTab({ initialReports, papers }: { initialReports: AuditReport[], papers: WorkingPaper[] }) {
   const [reports, setReports] = React.useState(initialReports);
   const [viewingReport, setViewingReport] = React.useState<AuditReport | null>(null);
   const [editingReport, setEditingReport] = React.useState<AuditReport | null>(null);
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [selectedPaperIds, setSelectedPaperIds] = React.useState<string[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = React.useState<string>(MOCK_TEMPLATES.find(t => t.type === 'report')?.id || '');
+  const [templateSearchQuery, setTemplateSearchQuery] = React.useState('');
+  const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = React.useState(false);
   const reportContentRef = React.useRef<HTMLDivElement>(null);
+
+  const reportTemplates = MOCK_TEMPLATES.filter(t => t.type === 'report');
 
   const REPORT_TEMPLATE = `<div style="text-align: center; margin-top: 100px;">
   <h1 style="font-size: 36px; font-weight: bold;">审计报告</h1>
@@ -3153,7 +3091,9 @@ function ReportTab({ initialReports }: { initialReports: AuditReport[] }) {
   const handleGenerate = () => {
     setIsGenerating(true);
     setTimeout(() => {
-      const baseTitle = 'xxx县财政预算审计报告';
+      const selectedTpl = reportTemplates.find(t => t.id === selectedTemplateId);
+      const baseTitle = selectedTpl?.name || 'xxx县财政预算审计报告';
+      
       const existingVersions = reports
         .filter(r => r.title.startsWith(baseTitle))
         .map(r => {
@@ -3175,7 +3115,9 @@ function ReportTab({ initialReports }: { initialReports: AuditReport[] }) {
       };
       setReports([newReport, ...reports]);
       setIsGenerating(false);
-      setViewingReport(newReport);
+      // Removed setViewingReport(newReport) to prevent auto-opening
+      setSelectedPaperIds([]);
+      setSelectedTemplateId(reportTemplates[0]?.id || '');
     }, 1500);
   };
 
@@ -3276,38 +3218,26 @@ function ReportTab({ initialReports }: { initialReports: AuditReport[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
-        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-          <FileText size={40} />
-        </div>
-        <h3 className="text-lg font-normal text-gray-900 tracking-tight mb-2">生成审计报告</h3>
-        <p className="text-gray-500 text-sm max-w-md mx-auto mb-8">
-          系统将调用大模型，结合本项目已编制的底稿与取证单，自动生成符合《国家审计准则》格式的审计报告初稿。
-        </p>
-        
-        <div className="flex flex-col items-center gap-4 max-w-sm mx-auto">
-          <button 
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
-          >
-            {isGenerating ? (
-              <><RefreshCw size={18} className="animate-spin" /> 生成中...</>
-            ) : (
-              <><BrainCircuit size={18} /> 一键生成报告</>
-            )}
-          </button>
-        </div>
-      </div>
-
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">报告列表</h3>
+          <div>
+            <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">审计报告管理</h3>
+          </div>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 text-sm"
+          >
+            <BrainCircuit size={16} /> 生成报告
+          </button>
         </div>
         
         {reports.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-gray-500">暂无生成的报告</p>
+          <div className="p-16 text-center">
+            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText size={32} />
+            </div>
+            <h3 className="text-sm font-bold text-gray-900">暂无审计报告</h3>
+            <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">请点击右上角“生成报告”按钮，选择相关底稿生成项目审计报告。</p>
           </div>
         ) : (
           <div className="p-6">
@@ -3500,6 +3430,190 @@ function ReportTab({ initialReports }: { initialReports: AuditReport[] }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl h-[70vh] overflow-hidden flex flex-col"
+            >
+              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">生成审计报告</h3>
+                <button onClick={() => { setIsModalOpen(false); setTemplateSearchQuery(''); setIsTemplateDropdownOpen(false); }} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={20}/>
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="relative group">
+                  <label className="block text-sm font-bold text-gray-700 mb-3">选择审计报告模板</label>
+                  <div className="relative">
+                    <div 
+                      onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
+                      className={cn(
+                        "w-full h-11 px-4 bg-gray-50 border rounded-xl flex items-center justify-between cursor-pointer transition-all",
+                        isTemplateDropdownOpen ? "border-blue-500 bg-white ring-4 ring-blue-500/5 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <FileText size={14} />
+                        </div>
+                        <span className="text-sm text-gray-900">
+                          {reportTemplates.find(t => t.id === selectedTemplateId)?.name || '请选择模板'}
+                        </span>
+                      </div>
+                      <ChevronDown size={18} className={cn("text-gray-400 transition-transform", isTemplateDropdownOpen && "rotate-180")} />
+                    </div>
+
+                    <AnimatePresence>
+                      {isTemplateDropdownOpen && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-[65]" 
+                            onClick={() => setIsTemplateDropdownOpen(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-gray-900/10 z-[70] overflow-hidden"
+                          >
+                            <div className="p-3 border-b border-gray-100 bg-gray-50/50">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <input 
+                                  autoFocus
+                                  type="text"
+                                  placeholder="搜索报告模板..."
+                                  value={templateSearchQuery}
+                                  onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                                  className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            <div className="max-h-[240px] overflow-y-auto p-2">
+                              {reportTemplates
+                                .filter(t => t.name.toLowerCase().includes(templateSearchQuery.toLowerCase()))
+                                .map(tpl => (
+                                  <div 
+                                    key={tpl.id}
+                                    onClick={() => {
+                                      setSelectedTemplateId(tpl.id);
+                                      setIsTemplateDropdownOpen(false);
+                                      setTemplateSearchQuery('');
+                                    }}
+                                    className={cn(
+                                      "px-4 py-3 rounded-lg flex items-center justify-between cursor-pointer transition-all mb-1 group",
+                                      selectedTemplateId === tpl.id ? "bg-blue-50" : "hover:bg-gray-50"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                                        selectedTemplateId === tpl.id ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
+                                      )}>
+                                        <FileText size={16} />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className={cn("text-sm font-medium", selectedTemplateId === tpl.id ? "text-blue-700" : "text-gray-700")}>
+                                          {tpl.name}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">V{tpl.version}.0</span>
+                                      </div>
+                                    </div>
+                                    {selectedTemplateId === tpl.id && (
+                                      <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                                        <Check size={12} className="text-white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              {reportTemplates.filter(t => t.name.toLowerCase().includes(templateSearchQuery.toLowerCase())).length === 0 && (
+                                <div className="py-8 text-center">
+                                  <p className="text-xs text-gray-500">未找到相关模板</p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">选择审计底稿</label>
+                  <div className="space-y-2">
+                    {papers.length === 0 ? (
+                      <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <FileCheck size={24} className="text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500 text-xs text-sm">暂无审计底稿，请先编制底稿。</p>
+                      </div>
+                    ) : (
+                      papers.map(paper => (
+                        <div 
+                          key={paper.id}
+                          onClick={() => {
+                            if (selectedPaperIds.includes(paper.id)) {
+                              setSelectedPaperIds(selectedPaperIds.filter(id => id !== paper.id));
+                            } else {
+                              setSelectedPaperIds([...selectedPaperIds, paper.id]);
+                            }
+                          }}
+                          className={cn(
+                            "p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between",
+                            selectedPaperIds.includes(paper.id) ? "border-blue-600 bg-blue-50/50" : "border-gray-100 hover:border-blue-200 hover:bg-gray-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                              selectedPaperIds.includes(paper.id) ? "border-blue-600 bg-blue-600" : "border-gray-300 bg-white"
+                            )}>
+                              {selectedPaperIds.includes(paper.id) && <Check size={14} className="text-white" />}
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-gray-900">{paper.title}</h4>
+                              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">V{paper.version}.0 | {new Date(paper.updatedAt).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-6 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  取消
+                </button>
+                <button 
+                  disabled={selectedPaperIds.length === 0 || isGenerating}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    handleGenerate();
+                  }}
+                  className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none"
+                >
+                  确定生成
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

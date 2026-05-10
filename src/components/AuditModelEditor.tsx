@@ -611,24 +611,33 @@ export default function AuditModelEditor({ initialModel, onBack, onSave }: Audit
                                         </div>
                                         
                                         {/* Logic Preview */}
-                                        <div className="flex flex-wrap gap-2">
-                                          {ccp.logicBlocks.map((lb, lIdx) => (
-                                            <div key={lIdx} className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded border border-gray-100 text-[10px] font-mono">
-                                              <span className="text-gray-600">{lb.leftTerm}</span>
-                                              <span className="font-bold text-blue-600">{lb.operator}</span>
-                                              <span className="text-gray-900">{lb.rightType === 'param' ? `${lb.paramValue}${lb.paramUnit}` : lb.rightTerm}</span>
-                                              {lIdx < ccp.logicBlocks.length - 1 && (
-                                                <span className="ml-1 text-orange-500 font-bold">{lb.relation}</span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          {ccp.logicGroups?.map((lg, lgIdx) => (
+                                            <React.Fragment key={lg.id}>
+                                              {lgIdx > 0 && (
+                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold rounded uppercase">{lg.relation}</span>
                                               )}
-                                            </div>
+                                              <div className="flex flex-wrap gap-2 p-1.5 bg-gray-50/50 rounded-lg border border-gray-100">
+                                                {lg.logicBlocks.map((lb, lIdx, arr) => (
+                                                  <div key={lb.id} className="flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-gray-200 text-[10px] font-mono shadow-sm">
+                                                    <span className="text-gray-600">{lb.leftTerm}</span>
+                                                    <span className="font-bold text-blue-600">{lb.operator}</span>
+                                                    <span className="text-gray-900">{lb.rightType === 'param' ? `${lb.paramValue}${lb.paramUnit}` : lb.rightTerm}</span>
+                                                    {lIdx < arr.length - 1 && (
+                                                      <span className="ml-1 text-blue-500 font-bold">{lb.relation}</span>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </React.Fragment>
                                           ))}
                                         </div>
 
-                                        {ccp.penaltyBasis && (
-                                          <p className="text-[10px] text-gray-400 italic mt-1 border-t border-gray-50 pt-2">
-                                            依据：{ccp.penaltyBasis.source} · {ccp.penaltyBasis.chapter}
+                                        {ccp.logicGroups?.map((lg, lgIdx) => (
+                                          <p key={lgIdx} className="text-[10px] text-gray-400 italic mt-1 border-t border-gray-50 pt-2 break-all">
+                                            依据：{lg.penaltyBasis.source} · {lg.penaltyBasis.chapter}
                                           </p>
-                                        )}
+                                        ))}
                                       </div>
                                     ))}
                                   </div>
@@ -815,24 +824,24 @@ export default function AuditModelEditor({ initialModel, onBack, onSave }: Audit
       </div>
 
     {/* Footer Actions */}
-      <div className="px-8 py-6 border-t border-gray-100 bg-white/80 backdrop-blur-md flex items-center justify-end gap-4 shrink-0 z-10 shadow-[0_-4px_20px_0_rgba(0,0,0,0.03)]">
+      <div className="px-6 py-4 border-t border-gray-100 bg-white/80 backdrop-blur-md flex items-center justify-end gap-3 shrink-0 z-10 shadow-[0_-4px_20px_0_rgba(0,0,0,0.03)]">
         <button 
           onClick={onBack}
-          className="px-10 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-all border border-gray-200"
+          className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all border border-gray-200"
         >
           取消
         </button>
         <button 
           onClick={() => handleSave('draft')}
-          className="px-10 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-blue-200"
+          className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-blue-200"
         >
           保存草稿
         </button>
         <button 
           onClick={() => handleSave('published')}
-          className="flex items-center gap-2 px-12 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 text-sm font-bold"
+          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20 active:scale-95 text-sm font-medium"
         >
-          <CheckCircle2 size={18} />
+          <CheckCircle2 size={16} />
           <span>发布模型</span>
         </button>
       </div>
@@ -918,32 +927,43 @@ export default function AuditModelEditor({ initialModel, onBack, onSave }: Audit
                             <h5 className="text-sm font-bold text-indigo-600 italic">逻辑: {ccp.name}</h5>
                           </div>
                           
-                          <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
-                            {ccp.logicBlocks.map((block, bIdx) => (
-                              <div key={block.id} className="flex flex-wrap items-center gap-2 text-sm">
-                                <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">{block.leftTerm}</span>
-                                <span className="font-bold text-blue-600">{block.operator}</span>
-                                <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">
-                                  {block.rightType === 'param' ? `${block.paramValue}${block.paramUnit}` : block.rightTerm}
-                                </span>
-                                {bIdx < ccp.logicBlocks.length - 1 && (
-                                  <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold rounded uppercase ml-2">{block.relation}</span>
+                          <div className="flex flex-wrap gap-2">
+                            {ccp.logicGroups?.map((lg, lgIdx) => (
+                              <React.Fragment key={lg.id}>
+                                {lgIdx > 0 && (
+                                  <div className="w-full flex items-center justify-center my-1">
+                                    <span className="px-3 py-1 bg-orange-100 text-orange-600 text-[10px] font-bold rounded-full uppercase">{lg.relation}</span>
+                                  </div>
                                 )}
-                              </div>
+                                <div className="w-full bg-gray-50/50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                                  {lg.logicBlocks.map((block, bIdx, arr) => (
+                                    <div key={block.id} className="flex flex-wrap items-center gap-2 text-sm">
+                                      <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">{block.leftTerm}</span>
+                                      <span className="font-bold text-blue-600">{block.operator}</span>
+                                      <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">
+                                        {block.rightType === 'param' ? `${block.paramValue}${block.paramUnit}` : block.rightTerm}
+                                      </span>
+                                      {bIdx < arr.length - 1 && (
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded uppercase ml-2">{block.relation}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </React.Fragment>
                             ))}
                           </div>
 
-                          {ccp.penaltyBasis && (
-                            <div className="bg-red-50/30 border border-red-100 rounded-2xl p-4">
+                          {ccp.logicGroups?.map((lg, lgIdx) => lg.penaltyBasis.source && (
+                            <div key={lgIdx} className="bg-red-50/30 border border-red-100 rounded-2xl p-4 mt-2">
                               <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                                 <CheckCircle2 size={12} />
                                 定度依据
                               </p>
                               <p className="text-xs text-red-800 leading-relaxed">
-                                {ccp.penaltyBasis.source} · {ccp.penaltyBasis.chapter}: {ccp.penaltyBasis.content}
+                                {lg.penaltyBasis.source} · {lg.penaltyBasis.chapter}: {lg.penaltyBasis.content}
                               </p>
                             </div>
-                          )}
+                          ))}
                         </div>
                       ))}
                     </div>

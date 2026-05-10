@@ -353,10 +353,6 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
     alert(`正在准备下载: ${fileName}\n保存路径: ~/Downloads/AuditKnowledge/`);
   };
 
-  const handleBatchDownload = () => {
-    alert(`正在批量打包下载 ${selectedDocs.length} 个文档的个人备份...`);
-  };
-
   const handleOpenChat = (doc: PersonalKnowledgeDoc) => {
     setChatDoc(doc);
     setMessages([
@@ -411,7 +407,7 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
   return (
     <div className="flex flex-col h-full bg-[#f8fafc]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 h-[90px] flex items-center justify-between shrink-0 shadow-sm z-10">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 h-[90px] flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-20">
         <div className="flex items-center gap-4">
           {onBack && (
             <button 
@@ -456,7 +452,7 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* List Content */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col flex-1">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white relative z-10">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <h3 className="text-base font-normal text-lg tracking-tight text-gray-900">知识文档列表</h3>
                 {selectedDocs.length > 0 && (
@@ -469,13 +465,6 @@ export default function PersonalKnowledgeBase({ readOnly, onBack, title }: Perso
               <div className="flex items-center gap-3">
                 {selectedDocs.length > 0 && (
                   <>
-                    <button 
-                      onClick={handleBatchDownload}
-                      className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all"
-                    >
-                      <Download size={14} />
-                      批量下载
-                    </button>
                     {!readOnly && (
                       <button 
                         onClick={() => handleDelete(selectedDocs)}

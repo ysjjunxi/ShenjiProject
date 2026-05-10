@@ -299,9 +299,9 @@ export default function AuditModelMgmt() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white overflow-hidden">
+    <div className="flex-1 flex flex-col bg-white overflow-y-auto relative">
       {/* Header & Filters */}
-      <div className="px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 h-[90px] shrink-0 flex items-center justify-between">
+      <div className="px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-20 h-[90px] shrink-0 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">审计模型管理</h2>
           <p className="text-sm text-gray-500 mt-0.5">全生命周期审计模型管理与配置</p>
@@ -386,10 +386,10 @@ export default function AuditModelMgmt() {
       </div>
 
       {/* Expandable Table List */}
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
+      <div className="flex-1 p-6 bg-gray-50/30">
         <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 text-[12px] font-bold text-gray-400 uppercase tracking-widest">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-widest">
               <tr>
                 <th className="px-6 py-4 w-10"></th>
                 <th className="px-6 py-4">模型名称</th>
@@ -435,6 +435,7 @@ export default function AuditModelMgmt() {
                     setActiveFile('Skill.md');
                   }}
                   onDownload={(v) => handleExport({ ...model, version: v.version })}
+                  onSelectVersion={(v) => handleSelectModel({ ...model, version: v.version })}
                   onDeleteModel={() => setShowDeleteModal(model.id)}
                 />
               ))}
@@ -513,7 +514,7 @@ export default function AuditModelMgmt() {
 
                     {/* Scripts Folder */}
                     <div className="space-y-1">
-                      <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                      <p className="px-3 text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                         <ChevronDown size={12} />
                         scripts/
                       </p>
@@ -534,7 +535,7 @@ export default function AuditModelMgmt() {
 
                     {/* Reference Folder */}
                     <div className="space-y-1">
-                      <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                      <p className="px-3 text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                         <ChevronDown size={12} />
                         reference/
                       </p>
@@ -567,20 +568,20 @@ export default function AuditModelMgmt() {
                         
                         <div className="grid grid-cols-2 gap-6 bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
                           <div>
-                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Model ID</p>
+                            <p className="text-xs uppercase font-bold text-gray-500 tracking-wider mb-1">Model ID</p>
                             <p className="text-blue-400">{previewModel.id}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Version</p>
+                            <p className="text-xs uppercase font-bold text-gray-500 tracking-wider mb-1">Version</p>
                             <p className="text-blue-400">{previewModel.version}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Category</p>
+                            <p className="text-xs uppercase font-bold text-gray-500 tracking-wider mb-1">Category</p>
                             <p className="text-gray-300">{previewModel.category}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Status</p>
-                            <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[10px]">ENABLED</span>
+                            <p className="text-xs uppercase font-bold text-gray-500 tracking-wider mb-1">Status</p>
+                            <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-xs">ENABLED</span>
                           </div>
                         </div>
 
@@ -619,13 +620,13 @@ export default function AuditModelMgmt() {
                               <div key={cp.id} className="p-5 bg-gray-800/40 rounded-2xl border border-gray-700 flex flex-col gap-3">
                                 <div className="flex items-center justify-between">
                                   <h3 className="font-bold text-white">{cp.name}</h3>
-                                  <span className="text-[10px] bg-gray-700 px-2 py-1 rounded text-gray-400 font-mono">CHECKPOINT</span>
+                                  <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400 font-mono">CHECKPOINT</span>
                                 </div>
                                 <p className="text-xs text-gray-400">{cp.description}</p>
                                 <div className="mt-2 space-y-2">
-                                  <p className="text-[10px] font-bold text-gray-500 uppercase">Standard Tables</p>
+                                  <p className="text-xs font-bold text-gray-500 uppercase">Standard Tables</p>
                                   {cp.standardTables.map(st => (
-                                    <div key={st.tableName} className="text-[11px] text-emerald-400/80 font-mono bg-emerald-500/5 px-2 py-1 rounded">
+                                    <div key={st.tableName} className="text-xs text-emerald-400/80 font-mono bg-emerald-500/5 px-2 py-1 rounded">
                                       {st.tableName}: {st.fields.join(', ')}
                                     </div>
                                   ))}
@@ -771,6 +772,7 @@ function ModelRow({
   onSetDefault,
   onPreview,
   onDownload,
+  onSelectVersion,
   onDeleteModel
 }: { 
   model: AuditModel; 
@@ -783,6 +785,7 @@ function ModelRow({
   onSetDefault: (v: ModelVersion) => void;
   onPreview: (v: ModelVersion) => void;
   onDownload: (v: ModelVersion) => void;
+  onSelectVersion: (v: ModelVersion) => void;
   onDeleteModel: () => void;
 }) {
   // Sort versions by createdAt descending
@@ -808,7 +811,7 @@ function ModelRow({
             )}>
               <Zap size={16} />
             </div>
-            <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{model.name}</span>
+            <span className="text-sm font-normal text-gray-900 group-hover:text-blue-600 transition-colors">{model.name}</span>
           </div>
         </td>
         <td className="px-6 py-4">
@@ -818,7 +821,7 @@ function ModelRow({
           <p className="text-xs text-gray-500 truncate" title={model.description}>{model.description}</p>
         </td>
         <td className="px-6 py-4">
-          <span className="text-xs font-mono font-bold text-blue-600">{model.version}</span>
+          <span className="text-xs font-arial font-bold text-blue-600">{model.version}</span>
         </td>
         <td className="px-6 py-4">
           <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -839,7 +842,7 @@ function ModelRow({
               >
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                    <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-widest">
                       <tr>
                         <th className="px-6 py-3">版本号</th>
                         <th className="px-6 py-3">创建-发布时间</th>
@@ -853,9 +856,9 @@ function ModelRow({
                         <tr key={v.version} className="hover:bg-gray-50/50 transition-colors group/row">
                           <td className="px-6 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-mono font-bold text-gray-700">{v.version}</span>
+                              <span className="text-sm font-arial font-bold text-gray-700">{v.version}</span>
                               {v.isDefault && (
-                                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">默认</span>
+                                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">默认</span>
                               )}
                               <button 
                                 onClick={(e) => { e.stopPropagation(); onPreview(v); }}
@@ -875,7 +878,7 @@ function ModelRow({
                           </td>
                           <td className="px-6 py-3">
                             <span className={cn(
-                              "text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded",
+                              "text-xs font-bold uppercase tracking-widest px-1.5 py-0.5 rounded",
                               (v.status || model.status) === 'published' ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"
                             )}>
                               {(v.status || model.status) === 'published' ? '已发布' : '草稿'}
@@ -883,6 +886,21 @@ function ModelRow({
                           </td>
                           <td className="px-6 py-3 text-right">
                             <div className="flex items-center justify-end gap-3 px-2">
+                              {!v.isDefault && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); onSetDefault(v); }}
+                                  className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                                >
+                                  设为默认
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onSelectVersion(v); }}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="查看详情"
+                              >
+                                <FileText size={14} />
+                              </button>
                               <button 
                                 onClick={(e) => { e.stopPropagation(); onEdit(v); }}
                                 className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
