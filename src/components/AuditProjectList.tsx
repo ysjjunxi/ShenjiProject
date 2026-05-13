@@ -8,6 +8,7 @@ import {
   User, 
   FileText,
   ChevronRight,
+  ChevronDown,
   Clock,
   Edit2,
   Trash2,
@@ -42,6 +43,8 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
   
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
   const [createMode, setCreateMode] = React.useState<'import' | 'custom'>('import');
+  const [importSearch, setImportSearch] = React.useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [newProject, setNewProject] = React.useState<Partial<AuditProject>>({
     name: '', code: '', object: '', period: '', members: [{ name: '', isLeader: true }]
   });
@@ -212,22 +215,63 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
                 {createMode === 'import' && (
                   <div className="mb-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
                     <label className="block text-sm font-medium text-gray-700 mb-2">选择已接入的审计项目</label>
-                    <select 
-                      className="w-full h-10 bg-white border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-gray-700"
-                      onChange={(e) => {
-                        const sel = DATASOURCE_PROJECTS.find(p => p.id === e.target.value);
-                        if (sel) {
-                          setNewProject({ ...newProject, name: sel.name, code: sel.code, object: sel.object, period: sel.period });
-                        }
-                      }}
-                      defaultValue=""
-                    >
-                      <option value="" disabled>请选择数据源项目...</option>
-                      {DATASOURCE_PROJECTS.map(dp => (
-                        <option key={dp.id} value={dp.id}>{dp.name} ({dp.code})</option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                    <div className="relative mb-3">
+                      <div 
+                        className="w-full min-h-[40px] bg-white border border-gray-200 rounded-lg px-3 flex flex-wrap items-center gap-2 cursor-text focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all text-sm"
+                      >
+                        <Search size={14} className="text-gray-400 shrink-0" />
+                        <input
+                          type="text"
+                          placeholder={newProject.name ? "重新搜索..." : "搜索并选择项目名称或编码..."}
+                          value={importSearch}
+                          onChange={(e) => {
+                            setImportSearch(e.target.value);
+                            setIsDropdownOpen(true);
+                          }}
+                          className="flex-1 bg-transparent min-w-[120px] outline-none text-gray-700 h-9"
+                          onFocus={() => setIsDropdownOpen(true)}
+                        />
+                        <ChevronDown 
+                          size={14} 
+                          className="text-gray-400 shrink-0 cursor-pointer hover:text-gray-600 transition-colors" 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setIsDropdownOpen(!isDropdownOpen); 
+                          }} 
+                        />
+                      </div>
+
+                      {isDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                          <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden z-20 max-h-60 flex flex-col">
+                            <div className="overflow-y-auto">
+                              {DATASOURCE_PROJECTS.filter(dp => dp.name.toLowerCase().includes(importSearch.toLowerCase()) || dp.code.toLowerCase().includes(importSearch.toLowerCase())).length > 0 ? DATASOURCE_PROJECTS.filter(dp => dp.name.toLowerCase().includes(importSearch.toLowerCase()) || dp.code.toLowerCase().includes(importSearch.toLowerCase())).map(dp => (
+                                <button
+                                  key={dp.id}
+                                  type="button"
+                                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex flex-col items-start gap-0.5 border-b border-gray-50 last:border-0 transition-colors"
+                                  onClick={() => {
+                                    setNewProject({ ...newProject, name: dp.name, code: dp.code, object: dp.object, period: dp.period });
+                                    setImportSearch(`${dp.name} (${dp.code})`);
+                                    setIsDropdownOpen(false);
+                                  }}
+                                >
+                                  <span className="text-sm font-normal text-gray-900">{dp.name}</span>
+                                  <span className="text-xs text-gray-500">编码: {dp.code} | 对象: {dp.object}</span>
+                                </button>
+                              )) : (
+                                <div className="px-4 py-6 flex flex-col items-center justify-center text-gray-400">
+                                  <Search size={24} className="mb-2 text-gray-300" />
+                                  <span className="text-sm">暂无匹配的审计项目</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
                       <AlertCircle size={12} className="text-blue-500"/>
                       选择后将自动带入单位基础信息
                     </p>
@@ -256,7 +300,7 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
                     className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">审计对象</label>
                     <input 
@@ -270,14 +314,29 @@ export default function AuditProjectList({ onSelectProject }: AuditProjectListPr
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">审计周期</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={newProject.period}
-                      onChange={e => setNewProject({...newProject, period: e.target.value})}
-                      placeholder="例如：2024年度"
-                      className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="date" 
+                        required
+                        value={newProject.period?.split(' 至 ')[0] || ''}
+                        onChange={e => {
+                          const end = newProject.period?.split(' 至 ')[1] || '';
+                          setNewProject({...newProject, period: `${e.target.value}${end ? ` 至 ${end}` : ''}`});
+                        }}
+                        className="flex-1 h-10 bg-gray-50 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-gray-700"
+                      />
+                      <span className="text-gray-400 text-sm">至</span>
+                      <input 
+                        type="date" 
+                        required
+                        value={newProject.period?.split(' 至 ')[1] || ''}
+                        onChange={e => {
+                          const start = newProject.period?.split(' 至 ')[0] || '';
+                          setNewProject({...newProject, period: `${start ? `${start} 至 ` : ' 至 '}${e.target.value}`});
+                        }}
+                        className="flex-1 h-10 bg-gray-50 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-gray-700"
+                      />
+                    </div>
                   </div>
                 </div>
                 

@@ -1083,18 +1083,20 @@ function AuthTab({ project }: { project: AuditProject }) {
       return;
     }
     
-    applyForm.databases.forEach(dbId => {
-       const db = AVAILABLE_DATABASES.find(d => d.id === dbId);
-       if (db) {
-         approvalStore.addApproval({
-           project: project.name,
-           applicant: '当前用户',
-           database: db.name,
-           applyTime: new Date().toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
-           applyNote: applyForm.note
-         });
-       }
-    });
+    const dbNames = applyForm.databases
+      .map(dbId => AVAILABLE_DATABASES.find(d => d.id === dbId)?.name)
+      .filter(Boolean)
+      .join('，');
+      
+    if (dbNames) {
+      approvalStore.addApproval({
+        project: project.name,
+        applicant: '当前用户',
+        database: dbNames,
+        applyTime: new Date().toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
+        applyNote: applyForm.note
+      });
+    }
     
     setApplyForm({ databases: [], note: '' });
     setShowApplyModal(false);
@@ -1126,7 +1128,6 @@ function AuthTab({ project }: { project: AuditProject }) {
               <th className="px-4 py-3 font-medium">申请用途</th>
               <th className="px-4 py-3 font-medium">申请时间</th>
               <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 font-medium">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -1139,15 +1140,6 @@ function AuthTab({ project }: { project: AuditProject }) {
                   {approval.status === 'approved' && <span className="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded uppercase">已通过</span>}
                   {approval.status === 'rejected' && <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded uppercase">已驳回</span>}
                   {approval.status === 'pending' && <span className="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded uppercase">申请中</span>}
-                </td>
-                <td className="px-4 py-4">
-                  <button 
-                    onClick={() => setShowSchemaModal(true)}
-                    className={cn("hover:underline", approval.status === 'approved' ? "text-blue-600" : "text-gray-400 cursor-not-allowed")}
-                    disabled={approval.status !== 'approved'}
-                  >
-                    查看详情
-                  </button>
                 </td>
               </tr>
             ))}
@@ -1185,7 +1177,7 @@ function AuthTab({ project }: { project: AuditProject }) {
                     <Database size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">发起数据申请</h2>
+                    <h2 className="text-xl font-normal text-gray-900">发起数据申请</h2>
                     <p className="text-sm text-gray-500 mt-1">向数据安全管理员提交访问权限请求</p>
                   </div>
                 </div>
@@ -1551,6 +1543,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
 
   const [rules, setRules] = React.useState<AuditRule[]>(MOCK_RULES);
   const [selectedRuleIds, setSelectedRuleIds] = React.useState<string[]>(rules.map(r => r.id));
+  const [expandedRuleIds, setExpandedRuleIds] = React.useState<string[]>(rules.length > 0 ? [rules[0].id] : []);
   const [activeCategoryId, setActiveCategoryId] = React.useState<string>('cat1');
   const [editingCheckpoint, setEditingCheckpoint] = React.useState<{ruleId: string, index: number} | null>(null);
 
@@ -1559,6 +1552,13 @@ function ScreeningTab({ project }: { project: AuditProject }) {
       prev.includes(ruleId) 
         ? prev.filter(id => id !== ruleId)
         : [...prev, ruleId]
+    );
+  };
+
+  const handleToggleExpand = (ruleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedRuleIds(prev =>
+      prev.includes(ruleId) ? prev.filter(id => id !== ruleId) : [...prev, ruleId]
     );
   };
 
@@ -1647,6 +1647,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {rules.map((rule) => {
               const isSelected = selectedRuleIds.includes(rule.id);
+              const isExpanded = expandedRuleIds.includes(rule.id);
               return (
                 <div 
                   key={rule.id} 
@@ -1658,22 +1659,34 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                   )}
                   onClick={() => handleToggleRule(rule.id)}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={cn(
-                      "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
-                      isSelected ? "border-blue-600 bg-blue-600" : "border-gray-200"
-                    )}>
-                      {isSelected && <Check size={12} className="text-white" />}
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                        isSelected ? "border-blue-600 bg-blue-600" : "border-gray-200"
+                      )}>
+                        {isSelected && <Check size={12} className="text-white" />}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-normal text-gray-900">{rule.name}</h4>
+                        <p className="text-[12px] text-gray-400 uppercase tracking-widest mt-0.5">{rule.businessType}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900">{rule.name}</h4>
-                      <p className="text-[12px] text-gray-400 uppercase tracking-widest mt-0.5">{rule.businessType}</p>
-                    </div>
+                    <button
+                      onClick={(e) => handleToggleExpand(rule.id, e)}
+                      className={cn(
+                        "p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-transform duration-200",
+                        isExpanded ? "rotate-180" : ""
+                      )}
+                    >
+                      <ChevronDown size={16} />
+                    </button>
                   </div>
 
-                <div className="space-y-4">
-                  {/* Fixed Section */}
-                  {rule.fixedCheckpoints.length > 0 && (
+                {isExpanded && (
+                  <div className="space-y-4">
+                    {/* Fixed Section */}
+                    {rule.fixedCheckpoints.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400 uppercase tracking-widest px-1">
                         <div className="w-1 h-3 bg-blue-400 rounded-full" />
@@ -1745,9 +1758,11 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                       </div>
                     </div>
                   )}
+                  </div>
+                )}
                 </div>
-              </div>
-            )})}
+              );
+            })}
           </div>
         </div>
 
@@ -2200,7 +2215,7 @@ function SuspicionTab({ suspicions, onGenerateEvidence }: { suspicions: Suspicio
                     <BookOpen size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">关联法规/文档</h2>
+                    <h2 className="text-xl font-normal text-gray-900">关联法规/文档</h2>
                   </div>
                 </div>
                 <button 
@@ -2258,7 +2273,7 @@ function SuspicionTab({ suspicions, onGenerateEvidence }: { suspicions: Suspicio
                     <Database size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">数据溯源快照</h2>
+                    <h2 className="text-xl font-normal text-gray-900">数据溯源快照</h2>
                     <p className="text-xs text-gray-500 mt-1">
                       来源: {selectedSourceSuspicion.sourceType === 'database' ? '结构化数据库' : '非结构化文档'}
                     </p>

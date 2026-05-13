@@ -122,11 +122,11 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
   const handleGenerateExample = () => {
     const exampleContent = `# 关于某市XX局财政收支情况的审计报告
 
-**文号：** 【*文号】
-**被审计单位：** 【*被审计单位】
+**文号：** 【*文号|审报告[2024]1号】
+**被审计单位：** 【*被审计单位|某市卫生健康局】
 
 ## 一、基本情况
-【*被审计单位】于【审计起止日期】对XXX情况进行了审计。审计结果表明，该局2023年预算执行情况总体良好，基本保证了全市公共卫生事业的正常运转。
+【*被审计单位|某市卫生健康局】于【审计起止日期】对XXX情况进行了审计。审计结果表明，该局2023年预算执行情况总体良好，基本保证了全市公共卫生事业的正常运转。
 
 ## 二、审计发现的主要问题
 
@@ -453,30 +453,6 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                   <div className="prose prose-sm max-w-none">
                     <Markdown>{msg.content}</Markdown>
                   </div>
-                  
-                  {msg.id === 'welcome' && (
-                    <div className="mt-4 grid grid-cols-1 gap-1.5 overflow-hidden">
-                      {TEMPLATE_TYPES.map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => applyTemplate(type)}
-                          className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-100 rounded-xl text-[11px] font-bold text-gray-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all text-left group"
-                        >
-                          <FileText size={12} className="text-gray-400 group-hover:text-blue-500" />
-                          <span className="truncate">{type}</span>
-                          <ArrowRight size={10} className="ml-auto opacity-0 -translate-x-2 group-hover:opacity-40 group-hover:translate-x-0 transition-all" />
-                        </button>
-                      ))}
-                      <button
-                        onClick={handleGenerateExample}
-                        className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-100 rounded-xl text-[11px] font-bold text-orange-600 hover:bg-orange-100 transition-all text-left mt-1 border-dashed"
-                      >
-                        <Sparkles size={12} className="text-orange-500" />
-                        <span>查看审计报告示例</span>
-                        <ArrowRight size={10} className="ml-auto" />
-                      </button>
-                    </div>
-                  )}
                 </div>
                 <span className="text-[10px] text-gray-400 px-1">
                   {format(msg.timestamp, 'HH:mm')}
@@ -730,7 +706,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                           <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                             <Upload size={14} />
                           </div>
-                          <span>从上传文件</span>
+                          <span>上传文件</span>
                         </div>
                         <div 
                           onClick={() => {
@@ -901,10 +877,22 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                   <Markdown
                     components={{
                       code({node, className, children, ...props}: any) {
-                        const match = /^__slot__:(req|opt):(.*)$/.exec(String(children));
+                        const match = /^__slot__:(req|opt):([^|]+)(?:\|(.*))?$/.exec(String(children));
                         if (match) {
                           const isReq = match[1] === 'req';
                           const name = match[2];
+                          const value = match[3];
+                          if (value) {
+                             return (
+                               <span 
+                                 id={`slot-${name}`} 
+                                 className="bg-green-50 text-green-700 border-b border-green-400 px-1 mx-1 rounded-sm font-bold cursor-pointer hover:bg-green-100 transition-colors inline-block"
+                                 title={`${name}: ${value}`}
+                               >
+                                 {value}
+                               </span>
+                             );
+                          }
                           return (
                             <span 
                               id={`slot-${name}`} 
@@ -919,7 +907,7 @@ export default function SmartDocWriting({ onNavigate, initialProjectId }: PagePr
                       }
                     }}
                   >
-                    {currentDraft.replace(/【(\*?)([^】]+)】/g, (match, isReq, name) => `\`__slot__:${isReq ? 'req' : 'opt'}:${name}\``)}
+                    {currentDraft.replace(/【(\*?)([^】|]+)(?:\|([^】]+))?】/g, (match, isReq, name, value) => `\`__slot__:${isReq ? 'req' : 'opt'}:${name}${value ? '|' + value : ''}\``)}
                   </Markdown>
                 </div>
               )}

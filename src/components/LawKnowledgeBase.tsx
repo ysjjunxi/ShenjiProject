@@ -128,7 +128,7 @@ interface LawKnowledgeBaseProps {
 }
 
 export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }: LawKnowledgeBaseProps) {
-  const isAudit = propTitle?.includes('审计');
+  const isAudit = propTitle?.includes('审计') || propTitle?.includes('个人');
   const [view, setView] = React.useState<'list' | 'detail' | 'qa' | 'chunks'>('list');
   const [laws, setLaws] = React.useState<LawDocument[]>(isAudit ? MOCK_AUDIT_DOCS : MOCK_LAWS);
   const [selectedLaw, setSelectedLaw] = React.useState<LawDocument | null>(null);
@@ -226,7 +226,7 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
   }
 
   if (view === 'chunks' && viewingLawChunks) {
-    return <SharedChunkListView doc={viewingLawChunks} type="law" onBack={() => setView('list')} />;
+    return <SharedChunkListView doc={viewingLawChunks} type={isAudit ? 'doc' : 'law'} onBack={() => setView('list')} />;
   }
 
   return (
@@ -350,12 +350,9 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                       />
                     </td>
                     <td className="px-4 py-4">
-                      <button 
-                        onClick={() => { setSelectedLaw(law); setView('detail'); }}
-                        className="text-sm font-normal text-gray-900 hover:text-blue-600 transition-colors text-left"
-                      >
+                      <div className="text-sm font-normal text-gray-900 text-left">
                         {law.title}
-                      </button>
+                      </div>
                       <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-2">
                         <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded uppercase font-black text-[9px]">{law.category}</span>
                         <span className="line-clamp-1 font-medium">{law.description}</span>
@@ -381,9 +378,17 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
                     <td className="px-6 py-4 text-right overflow-visible">
                       <div className="flex items-center justify-end gap-1">
                         <button 
-                          onClick={() => { setViewingLawChunks(law); setView('chunks'); }}
+                          onClick={() => { 
+                            if (!isAudit) {
+                              setSelectedLaw(law);
+                              setView('detail');
+                            } else {
+                              setViewingLawChunks(law);
+                              setView('chunks');
+                            }
+                          }}
                           className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white shadow-sm border border-transparent hover:border-gray-100 rounded-lg transition-all"
-                          title="查看切片详情"
+                          title="查看详情"
                         >
                           <Layers size={16} />
                         </button>
@@ -830,15 +835,15 @@ export default function LawKnowledgeBase({ readOnly, title: propTitle, onBack }:
 
 function LawDetail({ law, onBack, onStartQA }: { law: LawDocument; onBack: () => void; onStartQA: () => void }) {
   return (
-    <div className="flex-1 flex flex-col bg-white overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+    <div className="flex-1 flex flex-col bg-[#f8fafc] h-full overflow-hidden">
+      <div className="px-8 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
-            <ArrowLeft size={20} />
+          <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all">
+            <ChevronLeft size={20} />
           </button>
           <div>
             <h3 className="text-lg font-normal tracking-tight text-gray-900">{law.title}</h3>
-            <div className="flex items-center gap-3 text-[10px] text-gray-400 mt-0.5 font-normal">
+            <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 font-medium">
               <span>发布部门: {law.department}</span>
               <span>•</span>
               <span>发布日期: {law.publishDate}</span>
@@ -846,8 +851,6 @@ function LawDetail({ law, onBack, onStartQA }: { law: LawDocument; onBack: () =>
               <span>生效日期: {law.effectiveDate}</span>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
         </div>
       </div>
 
@@ -872,12 +875,18 @@ function LawDetail({ law, onBack, onStartQA }: { law: LawDocument; onBack: () =>
             {law.clauses.map(clause => (
               <div key={clause.id} className="p-4 rounded-2xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group cursor-pointer">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-blue-600">{clause.title}</span>
+                  <span className="text-sm font-bold text-blue-600">{clause.title}</span>
                   <ChevronRight size={14} className="text-gray-300 group-hover:text-blue-400 transition-colors" />
                 </div>
-                <p className="text-xs text-gray-600 leading-relaxed">{clause.content}</p>
+                <p className="text-xs text-gray-600 leading-relaxed max-h-20 overflow-hidden line-clamp-3">{clause.content}</p>
               </div>
             ))}
+            {law.clauses.length === 0 && (
+               <div className="h-full flex flex-col items-center justify-center text-gray-300 py-20">
+                  <Layers size={48} strokeWidth={1} className="mb-4" />
+                  <p className="text-sm font-medium">暂无条款内容</p>
+               </div>
+            )}
           </div>
         </div>
       </div>
@@ -1197,10 +1206,13 @@ const MOCK_LAW_CHUNKS: Record<string, any[]> = {
 
 function SharedChunkListView({ doc, type, onBack }: { doc: any; type: 'law' | 'doc'; onBack: () => void }) {
   const [search, setSearch] = React.useState('');
-  const chunks = type === 'law' ? (MOCK_LAW_CHUNKS[doc.id] || []) : [];
   
-  const filteredChunks = chunks.filter(c => 
-    c.content.toLowerCase().includes(search.toLowerCase())
+  const isLaw = type === 'law';
+  const data = isLaw ? (doc.clauses || []) : (MOCK_LAW_CHUNKS[doc.id] || []);
+  
+  const filteredData = data.filter((item: any) => 
+    item.content.toLowerCase().includes(search.toLowerCase()) || 
+    (isLaw && item.title && item.title.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -1211,7 +1223,9 @@ function SharedChunkListView({ doc, type, onBack }: { doc: any; type: 'law' | 'd
                 <ChevronLeft size={20} />
              </button>
              <div>
-                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">法规切片详情</h3>
+                <h3 className="text-lg font-normal text-lg tracking-tight text-gray-900">
+                  {isLaw ? '法规切片详情 (目录层级切分)' : '资料切片详情 (片段切分)'}
+                </h3>
                 <p className="text-xs text-gray-500 font-medium">{doc.title || doc.name}</p>
              </div>
           </div>
@@ -1220,7 +1234,7 @@ function SharedChunkListView({ doc, type, onBack }: { doc: any; type: 'law' | 'd
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
                   type="text"
-                  placeholder="搜索切片内容..."
+                  placeholder="搜索内容..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all font-medium"
@@ -1230,34 +1244,50 @@ function SharedChunkListView({ doc, type, onBack }: { doc: any; type: 'law' | 'd
        </div>
 
        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1600px] mx-auto">
-             {filteredChunks.map((chunk) => (
-                <div key={chunk.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow h-[300px]">
-                   <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
-                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-black tabular-nums">
-                         # {chunk.index}
-                      </span>
-                      <span className="text-[11px] font-bold text-gray-700 truncate flex-1">{chunk.docName}</span>
-                   </div>
-                   <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          <div className={isLaw ? "max-w-4xl mx-auto space-y-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1600px] mx-auto"}>
+             {filteredData.map((item: any) => (
+                isLaw ? (
+                  <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow flex gap-6 items-start">
+                    <div className="flex-1">
                       <p className="text-[13px] text-gray-700 leading-relaxed font-medium">
-                         {chunk.content}
+                         {item.content}
                       </p>
-                   </div>
-                </div>
+                    </div>
+                    <div className="w-48 shrink-0 border-l border-gray-100 pl-6">
+                      <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                         <span className="w-1.5 h-4 bg-blue-500 rounded-full inline-block"></span>
+                         {item.title}
+                      </h4>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow h-[300px]">
+                     <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-black tabular-nums">
+                           # {item.index}
+                        </span>
+                        <span className="text-[11px] font-bold text-gray-700 truncate flex-1">{item.docName}</span>
+                     </div>
+                     <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                        <p className="text-[13px] text-gray-700 leading-relaxed font-medium">
+                           {item.content}
+                        </p>
+                     </div>
+                  </div>
+                )
              ))}
           </div>
-          {filteredChunks.length === 0 && (
+          {filteredData.length === 0 && (
              <div className="h-full flex flex-col items-center justify-center text-gray-300 py-20">
                 <Layers size={48} strokeWidth={1} className="mb-4" />
-                <p className="text-sm font-medium">暂无匹配的切片内容</p>
+                <p className="text-sm font-medium">暂无匹配的内容</p>
              </div>
           )}
        </div>
 
        <div className="bg-white border-t border-gray-100 px-8 py-3 flex items-center justify-between shrink-0 font-bold">
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">
-             展示 {filteredChunks.length} 条数据
+             展示 {filteredData.length} 条数据
           </p>
           <div className="flex items-center gap-1">
              <button className="p-1 text-gray-400 disabled:opacity-30"><ChevronLeft size={16} /></button>

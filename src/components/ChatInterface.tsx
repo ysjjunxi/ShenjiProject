@@ -55,6 +55,7 @@ export default function ChatInterface({
   
   const [selectedKBId, setSelectedKBId] = React.useState<string | null>(null);
   const [selectedAuditModelId, setSelectedAuditModelId] = React.useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -75,6 +76,8 @@ export default function ChatInterface({
   }, []);
 
   const publishedModels = MOCK_MODELS.filter(m => m.status === 'published');
+  const selectedAuditModel = publishedModels.find(m => m.id === selectedAuditModelId);
+  const selectedKB = KNOWLEDGE_BASES.find(kb => kb.id === selectedKBId);
   const filteredModels = publishedModels.filter(m => 
     m.name.toLowerCase().includes(modelSearch.toLowerCase()) ||
     m.category.toLowerCase().includes(modelSearch.toLowerCase())
@@ -178,12 +181,61 @@ export default function ChatInterface({
               className="hidden" 
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
-                  alert(`准备上传: ${e.target.files[0].name}`);
+                  setSelectedFile(e.target.files[0]);
                 }
+                e.target.value = '';
               }} 
             />
             
             <div className="bg-white border border-gray-200 rounded-[24px] shadow-xl shadow-gray-200/20">
+              {(selectedFile || selectedAuditModel || selectedKB) && (
+                <div className="px-6 pt-4 flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFile && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100 group/chip animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                           <FileText size={10} />
+                        </div>
+                        <span className="text-xs font-bold text-gray-600 truncate max-w-[150px]">{selectedFile.name}</span>
+                        <button 
+                          onClick={() => setSelectedFile(null)}
+                          className="w-3.5 h-3.5 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-300 transition-colors cursor-pointer"
+                        >
+                           <Plus size={8} className="rotate-45" />
+                        </button>
+                      </div>
+                    )}
+                    {selectedAuditModel && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100 group/chip animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                           <Zap size={10} />
+                        </div>
+                        <span className="text-xs font-bold text-gray-600 truncate max-w-[150px]">{selectedAuditModel.name}</span>
+                        <button 
+                          onClick={() => setSelectedAuditModelId(null)}
+                          className="w-3.5 h-3.5 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-300 transition-colors cursor-pointer"
+                        >
+                           <Plus size={8} className="rotate-45" />
+                        </button>
+                      </div>
+                    )}
+                    {selectedKB && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100 group/chip animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                           <Database size={10} />
+                        </div>
+                        <span className="text-xs font-bold text-gray-600 truncate max-w-[150px]">{selectedKB.name}</span>
+                        <button 
+                          onClick={() => setSelectedKBId(null)}
+                          className="w-3.5 h-3.5 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-300 transition-colors cursor-pointer"
+                        >
+                           <Plus size={8} className="rotate-45" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

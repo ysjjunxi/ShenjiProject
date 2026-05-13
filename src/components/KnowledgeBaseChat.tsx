@@ -208,14 +208,6 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
               <p className="text-[11px] text-gray-400 font-medium">知识库对话助手 • 实时分析中</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all" title="对话设置">
-              <SlidersHorizontal size={18} />
-            </button>
-            <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all" title="清空对话" onClick={() => setMessages([])}>
-              <Trash2 size={18} />
-            </button>
-          </div>
         </div>
 
         {/* Chat History */}
@@ -279,18 +271,6 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
                        <span>0.6</span>
                     </div>
                  </div>
-                 
-                 <div className="flex items-center gap-2">
-                    <button className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors">
-                       <StopCircle size={16} />
-                    </button>
-                    <button className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors">
-                       <RotateCcw size={16} />
-                    </button>
-                    <button className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors">
-                       <FileText size={16} />
-                    </button>
-                 </div>
               </div>
 
               {/* Text Area */}
@@ -328,16 +308,6 @@ export default function KnowledgeBaseChat({ kb, onBack }: KnowledgeBaseChatProps
                    <Send size={18} />
                  </button>
               </div>
-           </div>
-        </div>
-
-        {/* Floating Actions on the right */}
-        <div className="absolute right-6 bottom-1/4 flex flex-col gap-3">
-           <div className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 transition-all cursor-pointer">
-              <FileText size={20} />
-           </div>
-           <div className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 transition-all cursor-pointer">
-              <Smile size={20} />
            </div>
         </div>
       </div>

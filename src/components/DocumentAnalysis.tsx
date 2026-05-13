@@ -2121,7 +2121,7 @@ export default function DocumentAnalysis() {
                    <Bot size={22} />
                  </div>
                  <div>
-                   <h3 className="text-sm font-normal text-lg tracking-tight text-gray-900 leading-tight">切线详情</h3>
+                   <h3 className="text-sm font-normal text-lg tracking-tight text-gray-900 leading-tight">文档对话</h3>
                    <div className="flex items-center gap-1.5 mt-0.5">
                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                      <span className="text-xs font-medium text-gray-400">AI 审计专家在线</span>
@@ -2433,10 +2433,10 @@ export default function DocumentAnalysis() {
                   </div>
                   <div className="flex bg-gray-100 p-1.5 rounded-2xl gap-1.5">
                     {[
-                      { id: 'invoice', label: '发票模型', icon: <FileText size={14} /> },
-                      { id: 'bid', label: '标书模型', icon: <FileCheck2 size={14} /> },
-                      { id: 'contract', label: '合同模型', icon: <ShieldAlert size={14} /> },
-                      { id: 'tender_announcement', label: '招标公告', icon: <Bot size={14} /> }
+                      { id: 'invoice', label: '发票分析模型', icon: <FileText size={14} /> },
+                      { id: 'bid', label: '标书分析模型', icon: <FileCheck2 size={14} /> },
+                      { id: 'contract', label: '合同分析模型', icon: <ShieldAlert size={14} /> },
+                      { id: 'tender_announcement', label: '招标公告分析模型', icon: <Bot size={14} /> }
                     ].filter(type => type.id === parsingConfig.docType).map(type => (
                       <button
                         key={type.id}
@@ -2557,34 +2557,34 @@ export default function DocumentAnalysis() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
             >
-              <div className="p-6">
-                <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4">
-                  <Trash2 size={24} />
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Trash2 size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">确认删除文档？</h3>
-                <p className="text-sm text-gray-500 mb-6">
+                <h3 className="text-lg font-normal text-gray-900 tracking-tight mb-2">确认删除文档？</h3>
+                <p className="text-sm text-gray-500 leading-relaxed mb-2">
                   删除后该文档的所有分析结果、比对记录将无法恢复。是否确认删除？
                 </p>
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setShowConfirmDelete(null)}
-                    className="flex-1 py-3 bg-gray-50 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-colors"
-                  >
-                    取消
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setDocs(prev => prev.filter(d => d.id !== showConfirmDelete));
-                      setSelectedDocs(prev => prev.filter(id => id !== showConfirmDelete));
-                      if (selectedDocId === showConfirmDelete) setSelectedDocId(null);
-                      if (chatDocId === showConfirmDelete) setChatDocId(null);
-                      setShowConfirmDelete(null);
-                    }}
-                    className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all active:scale-95"
-                  >
-                    确认删除
-                  </button>
-                </div>
+              </div>
+              <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button 
+                  onClick={() => setShowConfirmDelete(null)}
+                  className="px-6 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-all"
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={() => {
+                    setDocs(prev => prev.filter(d => d.id !== showConfirmDelete));
+                    setSelectedDocs(prev => prev.filter(id => id !== showConfirmDelete));
+                    if (selectedDocId === showConfirmDelete) setSelectedDocId(null);
+                    if (chatDocId === showConfirmDelete) setChatDocId(null);
+                    setShowConfirmDelete(null);
+                  }}
+                  className="px-8 py-2.5 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-500/20 active:scale-95"
+                >
+                  确认删除
+                </button>
               </div>
             </motion.div>
           </div>
