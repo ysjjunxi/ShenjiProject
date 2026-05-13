@@ -374,24 +374,6 @@ const SAMPLE_COMPARISON: any = {
       location: '第15页',
       similarity: 95,
       hammingDistance: 4
-    },
-    { 
-      sourceContent: '在对于其后之进行过程中的由于对于施工现场之由于管理不周全进而导致的质量问题。',
-      targetContent: '在对于其后之进行过程中的由于对于施工现场之由于管理不周全进而导致的质量问题。',
-      sourceDocName: '投标人A_技术标.pdf',
-      targetDocName: '投标人B_技术标.pdf',
-      location: '第45页',
-      similarity: 100,
-      hammingDistance: 0
-    },
-    { 
-      sourceContent: '确保本工程的“履约保正金”于规定时间内完成支付。',
-      targetContent: '确保本工程的“履约保正金”于规定时间内完成支付。',
-      sourceDocName: '投标人A_技术标.pdf',
-      targetDocName: '投标人B_技术标.pdf',
-      location: '第12页',
-      similarity: 100,
-      hammingDistance: 0
     }
   ],
   // 围串标异常线索数据
@@ -423,6 +405,20 @@ const SAMPLE_COMPARISON: any = {
       { item: '章节编号一致性', metric: '自动编号格式', value: '完全一致', status: 'info', desc: '采用相同的不规范编号修正逻辑' }
     ],
     paraphraseAnalysis: [
+      { 
+        type: '病句与异常表达', 
+        evidence: '在对于其后之进行过程中的由于对于施工现场之由于管理不周全进而导致的质量问题。', 
+        confidence: 98, 
+        status: 'critical',
+        details: '检测到两份文档同时出现极为不符合语言习惯的同源错写长难句' 
+      },
+      { 
+        type: '冷僻错别字', 
+        evidence: '确保本工程的“履约保正金”于规定时间内完成支付。', 
+        confidence: 100, 
+        status: 'critical',
+        details: '包含相同的不常见低级错别字，具有极强的身份指纹属性' 
+      },
       { 
         type: '同义词替换', 
         evidence: '“实施”替换为“执行”，“确保”替换为“保障”', 
@@ -495,9 +491,7 @@ const COMPARISON_CONFIG = [
   },
   {
     id: 'duplication', label: '内容查重', options: [
-      { id: 'dup_snippet', label: '重复片段' },
-      { id: 'dup_grammar', label: '内容语法/表达' },
-      { id: 'dup_typo', label: '冷僻错别字' }
+      { id: 'dup_snippet', label: '重复片段' }
     ]
   },
   {
@@ -505,7 +499,9 @@ const COMPARISON_CONFIG = [
       { id: 'para_synonym', label: '同义词替换' },
       { id: 'para_order', label: '语序倒装/句子结构调整' },
       { id: 'para_restructure', label: '段落重组/顺序调整' },
-      { id: 'para_modifier', label: '修饰语增删' }
+      { id: 'para_modifier', label: '修饰语增删' },
+      { id: 'dup_grammar', label: '病句与异常表达' },
+      { id: 'dup_typo', label: '冷僻错别字' }
     ]
   }
 ];
@@ -1928,8 +1924,7 @@ export default function DocumentAnalysis() {
                                     <div className="flex items-center gap-2 mb-2">
                                        <span className="w-1.5 h-4 bg-red-500 rounded-full" />
                                        <div className="flex items-center gap-3">
-                                          <h4 className="text-sm font-black text-gray-900">{idx === 2 ? '内容语法/表达异常检测' : idx === 3 ? '冷僻错别字一致性检测' : `重复片段 #${idx + 1}`}</h4>
-                                          {idx >= 2 && <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-xs font-black uppercase">语义特征碰撞</span>}
+                                          <h4 className="text-sm font-black text-gray-900">{`重复片段 #${idx + 1}`}</h4>
                                        </div>
                                     </div>
                                     <p className="text-xs text-gray-400 font-bold mb-2 italic">来源: {frag.sourceDocName} · 位置: {frag.location}</p>

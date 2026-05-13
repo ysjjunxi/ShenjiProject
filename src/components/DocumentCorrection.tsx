@@ -20,9 +20,13 @@ import {
   Loader2,
   Check,
   ArrowRight,
+  ArrowLeft,
   Maximize2,
   Minimize2,
-  Share2
+  Share2,
+  Clock,
+  Eye,
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { FileInfo, CorrectionTask, CorrectionResult, CorrectionDiff } from '@/src/types';
@@ -63,6 +67,16 @@ const MOCK_DIFFS: CorrectionDiff[] = [
   { type: 'consistency', original: '建议该单位', corrected: '审计建议该采购单位', explanation: '上下文主语一致性调整，更明确指向被审计实体。', index: 180, length: 5, confidence: 88 },
 ];
 
+const MOCK_HISTORY = [
+  {
+    id: 'h1',
+    fileName: '某市自来水集团审计报告初稿.docx',
+    date: '2024-03-12 14:30',
+    status: 'completed',
+    issuesCount: 12
+  }
+];
+
 export default function DocumentCorrection() {
   const [files, setFiles] = React.useState<FileInfo[]>([]);
   const [selectedRules, setSelectedRules] = React.useState<string[]>(MOCK_RULES_DB.map(r => r.id));
@@ -84,7 +98,7 @@ export default function DocumentCorrection() {
     const file = uploadedFiles[0];
     const extension = file.name.split('.').pop()?.toLowerCase();
     const isSupported = ['pdf', 'doc', 'docx'].includes(extension || '');
-    const isTooLarge = file.size > 10 * 1024 * 1024; // 10MB
+    const isTooLarge = file.size > 50 * 1024; // 50KB
     const isCorrupted = Math.random() < 0.1; // 10% chance to simulate corrupted file
 
     let newFile: FileInfo;
@@ -183,16 +197,51 @@ export default function DocumentCorrection() {
     setActiveFileId(null);
   };
 
+  const handleViewHistory = (record: any) => {
+    const newFile: FileInfo = {
+      id: record.id,
+      name: record.fileName,
+      size: 2048000,
+      type: 'application/pdf',
+      status: 'success'
+    };
+    setFiles([newFile]);
+    setStatus('completed');
+    const mockResult: CorrectionResult = {
+      fileId: record.id,
+      originalContent: MOCK_ORIGINAL,
+      correctedContent: MOCK_ORIGINAL.replace('违规', '不合规').replace('500万元', '500.00万元').replace('审核不严', '审核不严谨'),
+      diffs: MOCK_DIFFS
+    };
+    setResults([mockResult]);
+    setActiveFileId(record.id);
+  };
+
   const activeResult = results.find(r => r.fileId === activeFileId);
 
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
       {/* Header */}
-      <div className="px-8 py-6 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-normal text-gray-900 tracking-tight">智能文书矫正</h2>
-            <p className="text-sm text-gray-500 mt-1">自动化检测拼写、语法、逻辑及一致性错误</p>
+      <div className="h-[90px] px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 flex flex-col justify-center">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            {status === 'completed' && (
+              <button 
+                onClick={reset}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                title="返回上一级"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <div>
+              <h2 className="text-xl font-normal text-gray-900 tracking-tight">
+                {status === 'completed' ? '比对结果' : '智能文书矫正'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {status === 'completed' ? '查看错误详情与修改建议' : '自动化检测拼写、语法、逻辑及一致性错误'}
+              </p>
+            </div>
           </div>
           {status === 'completed' && (
             <div className="flex items-center gap-3">
@@ -216,10 +265,10 @@ export default function DocumentCorrection() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="w-full space-y-8">
           
           {error && status === 'idle' && (
-            <div className="max-w-5xl mx-auto bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+            <div className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
               <AlertCircle size={16} />
               {error}
             </div>
@@ -229,132 +278,162 @@ export default function DocumentCorrection() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col gap-6 max-w-5xl mx-auto"
+              className="flex flex-col gap-6 w-full"
             >
-              {/* Upload Section */}
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                <h3 className="text-lg font-normal tracking-tight text-gray-900 mb-4 flex items-center gap-2">
-                  <FileUp size={20} className="text-blue-600" />
-                  文档上传
-                </h3>
-                
-                <div className="border-2 border-dashed border-gray-200 rounded-2xl p-12 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all group relative">
-                  <input 
-                    type="file" 
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    accept=".doc,.docx,.pdf"
-                  />
-                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <Upload size={32} />
-                  </div>
-                  <p className="text-sm font-bold text-gray-900">点击或拖拽文件到此处上传</p>
-                  <p className="text-xs text-gray-400 mt-2">支持 DOC, DOCX, PDF (单次限上传 1 个文件，最大 10MB)</p>
-                </div>
-
-                {files.length > 0 && (
-                  <div className="mt-8 space-y-3">
-                    {files.map(file => (
-                      <div key={file.id} className={cn(
-                        "flex items-center justify-between p-4 rounded-xl border transition-all",
-                        file.status === 'error' ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"
-                      )}>
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center",
-                            file.status === 'error' ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"
-                          )}>
-                            <FileText size={20} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{file.name}</p>
-                            <p className="text-[10px] text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {file.status === 'error' && (
-                            <span className="text-xs text-red-600 font-medium flex items-center gap-1">
-                              <AlertCircle size={14} />
-                              {file.errorMessage}
-                            </span>
-                          )}
-                          <button 
-                            onClick={() => removeFile(file.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all relative z-20"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
+              {/* History Banner */}
+              {MOCK_HISTORY.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex items-center justify-between text-sm transition-all group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-200 text-gray-600 flex items-center justify-center shrink-0">
+                      <Clock size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-600 text-xs">最近矫正记录:</span>
+                        <span className="text-gray-900 text-sm font-medium">{MOCK_HISTORY[0]?.fileName}</span>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-1">
+                        <span className="flex items-center gap-1"><Calendar size={10} />{MOCK_HISTORY[0]?.date}</span>
+                        <span className="flex items-center gap-1"><AlertCircle size={10} />发现错误 {MOCK_HISTORY[0]?.issuesCount} 处</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                  <button 
+                    onClick={() => handleViewHistory(MOCK_HISTORY[0])}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-50 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  >
+                    <Eye size={14} />
+                    查看结果
+                  </button>
+                </div>
+              )}
 
-              {/* Rule Selection Section */}
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-normal tracking-tight text-gray-900 flex items-center gap-2">
-                    <Settings size={20} className="text-blue-600" />
-                    规则选择
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
+                {/* Upload Section */}
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+                  <h3 className="text-lg font-normal tracking-tight text-gray-900 mb-4 flex items-center gap-2">
+                    <FileUp size={20} className="text-blue-600" />
+                    文档上传
                   </h3>
-                  <button 
-                    onClick={handleSelectAll}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700"
-                  >
-                    {selectedRules.length === MOCK_RULES_DB.length ? '取消全选' : '全选'}
-                  </button>
-                </div>
+                  
+                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all group relative">
+                    <input 
+                      type="file" 
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      accept=".doc,.docx,.pdf"
+                      multiple={false}
+                    />
+                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                      <Upload size={20} />
+                    </div>
+                    <p className="text-sm font-bold text-gray-900">点击或拖着文件上传</p>
+                    <p className="text-xs text-gray-400 mt-1.5">单次限1个文件，最大50K</p>
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {CATEGORIES.map(cat => {
-                    const rulesInCat = MOCK_RULES_DB.filter(r => r.category === cat.id);
-                    return (
-                      <div key={cat.id} className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-4">
-                        <div className="flex items-center gap-2">
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", cat.bg, cat.color)}>
-                            {cat.icon}
+                  {files.length > 0 && (
+                    <div className="mt-6 flex-1 space-y-3">
+                      {files.map(file => (
+                        <div key={file.id} className={cn(
+                          "flex items-center justify-between p-3 rounded-xl border transition-all",
+                          file.status === 'error' ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"
+                        )}>
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                              file.status === 'error' ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"
+                            )}>
+                              <FileText size={16} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{file.name}</p>
+                              <p className="text-[10px] text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
+                            </div>
                           </div>
-                          <span className="text-sm font-bold text-gray-800">{cat.label}</span>
-                        </div>
-                        <div className="space-y-2 pl-10">
-                          {rulesInCat.map(rule => (
-                            <label key={rule.id} className="flex items-center gap-3 cursor-pointer group">
-                              <div className={cn(
-                                "w-4 h-4 rounded border flex items-center justify-center transition-all",
-                                selectedRules.includes(rule.id) ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 group-hover:border-blue-400 bg-white"
-                              )}>
-                                {selectedRules.includes(rule.id) && <Check size={10} strokeWidth={3} />}
-                              </div>
-                              <input 
-                                type="checkbox"
-                                className="hidden"
-                                checked={selectedRules.includes(rule.id)}
-                                onChange={() => toggleRule(rule.id)}
-                              />
-                              <span className={cn(
-                                "text-xs transition-colors",
-                                selectedRules.includes(rule.id) ? "text-gray-900 font-medium" : "text-gray-500 group-hover:text-gray-900"
-                              )}>
-                                {rule.name}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {file.status === 'error' && (
+                              <span className="text-xs text-red-600 font-medium flex items-center gap-1">
+                                <AlertCircle size={14} />
                               </span>
-                            </label>
-                          ))}
+                            )}
+                            <button 
+                              onClick={() => removeFile(file.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all relative z-20"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-8 flex justify-end">
-                  <button 
-                    onClick={startCorrection}
-                    disabled={files.filter(f => f.status === 'success').length === 0 || selectedRules.length === 0}
-                    className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none active:scale-95 text-sm"
-                  >
-                    <Play size={16} fill="currentColor" />
-                    <span>开始智能矫正</span>
-                  </button>
+                {/* Rule Selection Section */}
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-normal tracking-tight text-gray-900 flex items-center gap-2">
+                      <Settings size={20} className="text-blue-600" />
+                      规则选择
+                    </h3>
+                    <button 
+                      onClick={handleSelectAll}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                    >
+                      {selectedRules.length === MOCK_RULES_DB.length ? '取消全选' : '全选'}
+                    </button>
+                  </div>
+
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {CATEGORIES.map(cat => {
+                      const rulesInCat = MOCK_RULES_DB.filter(r => r.category === cat.id);
+                      return (
+                        <div key={cat.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", cat.bg, cat.color)}>
+                              {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
+                            </div>
+                            <span className="text-sm font-bold text-gray-800">{cat.label}</span>
+                          </div>
+                          <div className="space-y-2 pl-9">
+                            {rulesInCat.map(rule => (
+                              <label key={rule.id} className="flex items-start gap-2.5 cursor-pointer group">
+                                <div className={cn(
+                                  "w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center shrink-0 transition-all",
+                                  selectedRules.includes(rule.id) ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 group-hover:border-blue-400 bg-white"
+                                )}>
+                                  {selectedRules.includes(rule.id) && <Check size={8} strokeWidth={3} />}
+                                </div>
+                                <input 
+                                  type="checkbox"
+                                  className="hidden"
+                                  checked={selectedRules.includes(rule.id)}
+                                  onChange={() => toggleRule(rule.id)}
+                                />
+                                <span className={cn(
+                                  "text-xs leading-relaxed transition-colors",
+                                  selectedRules.includes(rule.id) ? "text-gray-900 font-medium" : "text-gray-500 group-hover:text-gray-900"
+                                )}>
+                                  {rule.name}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <button 
+                      onClick={startCorrection}
+                      disabled={files.filter(f => f.status === 'success').length === 0 || selectedRules.length === 0}
+                      className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none active:scale-95 text-sm"
+                    >
+                      <Play size={16} fill="currentColor" />
+                      <span>开始智能矫正</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
