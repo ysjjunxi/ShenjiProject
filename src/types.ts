@@ -325,6 +325,8 @@ export interface RuleFixedCheckpoint {
 
 export interface LogicBlock {
   id: string;
+  preLeftTerm?: string;
+  preOperator?: string;
   leftTerm: string;
   operator: string;
   rightTerm: string;

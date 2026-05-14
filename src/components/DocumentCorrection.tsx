@@ -265,7 +265,7 @@ export default function DocumentCorrection() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
-        <div className="w-full space-y-8">
+        <div className="max-w-7xl mx-auto space-y-8">
           
           {error && status === 'idle' && (
             <div className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
@@ -391,7 +391,7 @@ export default function DocumentCorrection() {
                         <div key={cat.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-3">
                           <div className="flex items-center gap-2">
                             <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", cat.bg, cat.color)}>
-                              {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
+                              {React.cloneElement(cat.icon as React.ReactElement<any>, { size: 14 })}
                             </div>
                             <span className="text-sm font-bold text-gray-800">{cat.label}</span>
                           </div>

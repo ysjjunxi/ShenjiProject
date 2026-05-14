@@ -56,7 +56,7 @@ export default function DataSourceApproval() {
     <div className="h-full flex flex-col bg-gray-50/50">
       <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-8 py-5 flex items-center justify-between z-10 sticky top-0">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">数据审批</h2>
+          <h2 className="text-xl font-normal text-gray-900 tracking-tight">数据审批</h2>
           <p className="text-sm text-gray-500 mt-1">审批各项目成员对其业务数据库接入和分析的申请。</p>
         </div>
       </div>

@@ -4,7 +4,7 @@ export function SystemOrg() {
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50/50 overflow-y-auto relative">
       {/* Header */}
-      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-10">
+      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">组织管理</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">部门结构树与组织架构管理</p>
@@ -23,7 +23,7 @@ export function SystemRole() {
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50/50 overflow-y-auto relative">
       {/* Header */}
-      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-10">
+      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">角色管理</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">系统角色定义与资源绑定</p>
@@ -42,7 +42,7 @@ export function SystemUser() {
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50/50 overflow-y-auto relative">
       {/* Header */}
-      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-10">
+      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">用户管理</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">用户账号信息与状态管理</p>
@@ -61,7 +61,7 @@ export function SystemLog() {
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50/50 overflow-y-auto relative">
       {/* Header */}
-      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-10">
+      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">日志查询</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">操作日志与系统异常日志查询</p>

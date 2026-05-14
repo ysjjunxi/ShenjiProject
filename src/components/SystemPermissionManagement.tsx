@@ -8,7 +8,7 @@ export default function SystemPermissionManagement() {
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50/50 overflow-y-auto relative">
       {/* Header */}
-      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm sticky top-0 z-10">
+      <div className="px-8 h-[90px] bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div>
           <h2 className="text-xl font-normal text-gray-900 tracking-tight">权限管理</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">管理系统菜单访问权限及底层数据隔离权限</p>

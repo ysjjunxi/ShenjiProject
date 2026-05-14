@@ -1396,9 +1396,9 @@ function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: Rule
             
             <div className="space-y-8">
               {formData.logicGroups?.map((lg, lgIndex) => (
-                <div key={lg.id} className="p-4 bg-white rounded-xl border border-orange-200 shadow-sm relative group/lg">
+                <div key={lg.id} className="p-4 bg-white rounded-xl border border-orange-200 relative group/lg">
                   {lgIndex > 0 && (
-                    <div className="absolute -top-[16px] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden z-20">
+                    <div className="absolute -top-[16px] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-md border border-orange-200 overflow-hidden z-20">
                       <select 
                         value={lg.relation} 
                         onChange={(e) => {
@@ -1430,7 +1430,7 @@ function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: Rule
                        setFormData({ ...formData, logicGroups });
                      }} className="text-xs font-medium text-orange-600 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">+ 添加校验条件</button>
                   </div>
-                  <div className="relative pl-12 pt-4 pb-4 bg-gray-50/50 rounded-2xl border border-gray-100 shadow-sm pr-4 mb-4">
+                  <div className="relative pl-12 pt-4 pb-4 bg-gray-50/50 rounded-2xl border border-gray-100 pr-4 mb-4">
                     {lg.logicBlocks.length > 1 && (
                       <div className="absolute left-[20px] top-10 bottom-10 w-px bg-gray-300"></div>
                     )}
@@ -1442,7 +1442,7 @@ function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: Rule
                          )}
                          
                          {bIdx > 0 && (
-                           <div className="absolute -left-[40px] top-1/2 -translate-y-1/2 bg-white rounded-md shadow-sm border border-orange-200 overflow-hidden group-hover/lbwrapper:border-orange-400 transition-colors z-20">
+                           <div className="absolute -left-[40px] top-1/2 -translate-y-1/2 bg-white rounded-md border border-orange-200 overflow-hidden group-hover/lbwrapper:border-orange-400 transition-colors z-20">
                               <select 
                                 value={lb.relation} 
                                 onChange={(e) => {
@@ -1459,29 +1459,19 @@ function EditCheckpointModal({ checkpoint, onClose, onSave }: { checkpoint: Rule
                            </div>
                          )}
                          
-                         <div className="w-full flex items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-orange-300 transition-colors group/lb">
-                           <input placeholder="变量A (如: 合同金额)" value={lb.leftTerm} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], leftTerm: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-1/3 min-w-[120px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
+                         <div className="w-full flex items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 hover:border-orange-300 transition-colors group/lb">
+                           
+                                        <input placeholder="变量如(5%)" value={lb.preLeftTerm || ''} onChange={e => { const lgs = JSON.parse(JSON.stringify(formData.logicGroups)); lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], preLeftTerm: e.target.value }; setFormData({ ...formData, logicGroups: lgs }); }} className="w-24 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-2 py-1.5 text-xs outline-none transition-all" />
+                                        <select value={lb.preOperator || ''} onChange={e => { const lgs = JSON.parse(JSON.stringify(formData.logicGroups)); lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], preOperator: e.target.value }; setFormData({ ...formData, logicGroups: lgs }); }} className="w-16 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-1 py-1.5 text-xs outline-none font-mono font-bold text-center transition-all appearance-none">
+                                          <option value=""></option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option><option value="==">==</option><option value="!=">!=</option>
+                                        </select>
+                                        <input placeholder="变量A (如: 合同金额)" value={lb.leftTerm} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], leftTerm: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-1/3 min-w-[120px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
                            <select value={lb.operator} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], operator: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-16 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-2 py-1.5 text-xs outline-none font-mono font-bold text-center transition-all appearance-none">
                              <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option><option value="==">==</option><option value="!=">!=</option>
                            </select>
                            <input placeholder="变量B / 固定值" value={lb.rightTerm} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], rightTerm: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="flex-1 min-w-[100px] bg-gray-50 border border-transparent hover:border-gray-300 focus:border-orange-400 focus:bg-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all" />
                            
-                           <div className="w-px h-6 bg-gray-200 mx-1"></div>
                            
-                           <div className="flex gap-2 items-center shrink-0">
-                             <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 hover:text-gray-700">
-                               <input type="checkbox" checked={lb.rightType==='param'} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], rightType: e.target.checked?'param':'fixed' }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-3.5 h-3.5 rounded border-gray-300 text-orange-500 focus:ring-orange-500" />
-                               参数化
-                             </label>
-                           </div>
-                           
-                           {lb.rightType === 'param' && (
-                             <div className="flex gap-1.5 items-center shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-100">
-                                <input placeholder="默认值(如 5)" value={lb.paramValue||''} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramValue: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-16 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
-                                <input placeholder="下限~上限" value={lb.paramRangeMin || lb.paramRangeMax ? `${lb.paramRangeMin||''}~${lb.paramRangeMax||''}` : ''} onChange={e => { const lgs = [...formData.logicGroups!]; const parts = e.target.value.split('~'); lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramRangeMin: parts[0]||'', paramRangeMax: parts[1]||'' }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" title="输入格式: 下限~上限" />
-                                <input placeholder="单位" value={lb.paramUnit||''} onChange={e => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks[bIdx] = { ...lgs[lgIndex].logicBlocks[bIdx], paramUnit: e.target.value }; setFormData({ ...formData, logicGroups: lgs}); }} className="w-12 bg-white border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 placeholder:text-xs" />
-                             </div>
-                           )}
                            
                            <button onClick={() => { const lgs = [...formData.logicGroups!]; lgs[lgIndex].logicBlocks.splice(bIdx, 1); setFormData({ ...formData, logicGroups: lgs}); }} className="text-gray-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-1 opacity-0 group-hover/lb:opacity-100"><X size={16}/></button>
                          </div>
@@ -1728,7 +1718,7 @@ function ScreeningTab({ project }: { project: AuditProject }) {
                                         {lg.logicBlocks.map((lb, lIdx, arr) => (
                                           <div key={lb.id} className="flex items-center gap-1">
                                             <span className="text-gray-700 text-[12px] font-mono">
-                                              {lb.leftTerm} <span className="text-blue-500 font-bold">{lb.operator}</span> {lb.rightTerm}{lb.paramUnit || ''}
+                                              {lb.preLeftTerm && <>{lb.preLeftTerm} <span className="text-blue-500 font-bold">{lb.preOperator}</span> </>}{lb.leftTerm} <span className="text-blue-500 font-bold">{lb.operator}</span> {lb.rightTerm}
                                             </span>
                                             {lIdx < arr.length - 1 && (
                                               <span className="text-[10px] text-blue-500 font-bold ml-1">{lb.relation}</span>

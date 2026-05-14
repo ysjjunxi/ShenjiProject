@@ -620,9 +620,15 @@ export default function AuditModelEditor({ initialModel, onBack, onSave }: Audit
                                               <div className="flex flex-wrap gap-2 p-1.5 bg-gray-50/50 rounded-lg border border-gray-100">
                                                 {lg.logicBlocks.map((lb, lIdx, arr) => (
                                                   <div key={lb.id} className="flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-gray-200 text-[10px] font-mono shadow-sm">
+                                                    {lb.preLeftTerm && (
+                                                      <>
+                                                        <span className="text-gray-600">{lb.preLeftTerm}</span>
+                                                        <span className="font-bold text-blue-600">{lb.preOperator}</span>
+                                                      </>
+                                                    )}
                                                     <span className="text-gray-600">{lb.leftTerm}</span>
                                                     <span className="font-bold text-blue-600">{lb.operator}</span>
-                                                    <span className="text-gray-900">{lb.rightType === 'param' ? `${lb.paramValue}${lb.paramUnit}` : lb.rightTerm}</span>
+                                                    <span className="text-gray-900">{lb.rightTerm}</span>
                                                     {lIdx < arr.length - 1 && (
                                                       <span className="ml-1 text-blue-500 font-bold">{lb.relation}</span>
                                                     )}
@@ -938,10 +944,16 @@ export default function AuditModelEditor({ initialModel, onBack, onSave }: Audit
                                 <div className="w-full bg-gray-50/50 rounded-2xl p-4 border border-gray-100 space-y-3">
                                   {lg.logicBlocks.map((block, bIdx, arr) => (
                                     <div key={block.id} className="flex flex-wrap items-center gap-2 text-sm">
+                                      {block.preLeftTerm && (
+                                        <>
+                                          <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">{block.preLeftTerm}</span>
+                                          <span className="font-bold text-blue-600">{block.preOperator}</span>
+                                        </>
+                                      )}
                                       <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">{block.leftTerm}</span>
                                       <span className="font-bold text-blue-600">{block.operator}</span>
                                       <span className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 font-mono">
-                                        {block.rightType === 'param' ? `${block.paramValue}${block.paramUnit}` : block.rightTerm}
+                                        {block.rightTerm}
                                       </span>
                                       {bIdx < arr.length - 1 && (
                                         <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded uppercase ml-2">{block.relation}</span>
